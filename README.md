@@ -6,6 +6,24 @@
 > 已安装：**~/Applications/Mac 清理助手.app**
 > 打开方式：Finder → 应用程序 → 「Mac 清理助手」；或启动台按 F4 搜索；或 `open ~/Applications/Mac\ 清理助手.app`
 
+## 打不开？看这里
+
+双击图标没反应时，**先看日志**：`~/.local/state/mac-cleanup-app/launch.log`（每次启动都留痕）。
+
+- 现象：点了图标什么都没有
+  原因：这个应用没有窗口，界面在浏览器里。启动器曾把服务挂在前台运行，macOS 于是认为
+  「App 已在运行」，之后再点图标只去激活那个没有窗口的进程。现在改成服务丢后台、启动器立刻退出，
+  每次点击都会重新打开界面（实测连点两次都能打开）。
+- 现象：想手动兜底
+  终端里直接开：`open "http://127.0.0.1:$(cat ~/.local/state/mac-cleanup-app/port)/"`，
+  端口号就在 `~/.local/state/mac-cleanup-app/port`。
+- 现象：服务卡住 / 想彻底停掉
+  界面上点「关闭服务」，或者终端 `pkill -f "Mac 清理助手.app/Contents/Resources/server.py"`。
+  再点图标会自动重新起来。
+- 现象：macOS 提示「无法验证开发者」
+  本机自建的应用是 ad-hoc 签名。若被拦，右键点图标 →「打开」→ 确认一次即可；或终端执行
+  `xattr -dr com.apple.quarantine ~/Applications/Mac\ 清理助手.app`。
+
 ## 界面流程（四步，都是点按钮）
 
 1. **体检**（只读扫描，通常 1-3 分钟）→ 顶部实时显示磁盘可用空间
