@@ -32,6 +32,9 @@ STATE_DIR = os.path.join(HOME, ".local", "state", "mac-cleanup-app")
 LOG_FILE = os.path.join(STATE_DIR, "server.log")
 SCAN_JSON = os.path.join(STATE_DIR, "scan.json")
 REPORT_HTML = os.path.join(STATE_DIR, "report.html")
+JUDGED_JSON = os.path.join(STATE_DIR, "judged.json")
+SELECT_JSON = os.path.join(STATE_DIR, "select.json")
+TYPESAFE_KEY = os.path.join(HOME, ".config", "typesafe", "key")
 OPS_LOG = os.path.join(HOME, ".local", "state", "macos-deep-optimize", "operations.log")
 
 SKILL_CANDIDATES = [
@@ -145,6 +148,8 @@ class State:
         d["disk"] = disk_stats()
         if d["has_scan"]:
             d["tiers"] = tiers_summary()
+            d["items"] = build_items()
+            d["judged"] = judged_summary()
         return d
 
 
@@ -184,11 +189,122 @@ def do_scan() -> None:
     log("scan ok")
 
 
-def make_report() -> str:
-    rc, out = run_script("report.py", [SCAN_JSON, REPORT_HTML], timeout=180)
+def make_report(use_judge: bool = False) -> str:
+    args = [SCAN_JSON, REPORT_HTML]
+    if use_judge and os.path.exists(JUDGED_JSON):
+        args.append("--judge=" + JUDGED_JSON)
+    rc, out = run_script("report.py", args, timeout=180)
     if rc != 0 or not os.path.exists(REPORT_HTML):
         raise RuntimeError("报告生成失败：%s" % (out.strip()[:500] or "无输出"))
     return "/report.html"
+
+
+def safe_suffixes() -> tuple:
+    """clean.py 里认的「黄灯中已核实的纯缓存子路径」后缀——勾选范围以它为准。"""
+    try:
+        if SKILL_DIR not in sys.path:
+            sys.path.insert(0, SKILL_DIR)
+        import importlib
+        clean_mod = importlib.import_module("clean")
+        return tuple(getattr(clean_mod, "YELLOW_SAFE_SUFFIXES", ()))
+    except Exception as exc:                                          # noqa: BLE001
+        log("safe_suffixes failed: %s" % exc)
+        return ()
+
+
+def build_items() -> list:
+    """体检清单：绿灯 + 黄灯，带「能不能勾选」和 Jev 的 AI 判断（如果有）。"""
+    if not os.path.exists(SCAN_JSON):
+        return []
+    try:
+        if SKILL_DIR not in sys.path:
+            sys.path.insert(0, SKILL_DIR)
+        import importlib
+        report = importlib.import_module("report")
+        with open(SCAN_JSON, encoding="utf-8") as f:
+            scan = json.load(f)
+        tiers = report.build_model(scan)
+    except Exception as exc:                                          # noqa: BLE001
+        log("build_items failed: %s" % exc)
+        return []
+
+    judged = {}
+    if os.path.exists(JUDGED_JSON):
+        try:
+            with open(JUDGED_JSON, encoding="utf-8") as f:
+                for row in json.load(f).get("judged", []):
+                    judged[row.get("path", "")] = row
+        except (OSError, json.JSONDecodeError) as exc:
+            log("read judged failed: %s" % exc)
+
+    suffixes = safe_suffixes()
+    out = []
+    for tier in ("green", "yellow"):
+        for r in tiers.get(tier, []):
+            p = r.get("path", "")
+            selectable = tier == "green" or (suffixes and p.endswith(suffixes))
+            note_parts = [r.get("desc", "")]
+            if r.get("risk"):
+                note_parts.append("风险：" + str(r["risk"]))
+            if r.get("disposal"):
+                note_parts.append("处置：" + str(r["disposal"]))
+            out.append({
+                "path": p, "name": r.get("name", ""), "size": r.get("size", ""),
+                "size_kb": r.get("size_kb", 0), "tier": tier,
+                "selectable": bool(selectable),
+                "note": " ｜ ".join([x for x in note_parts if x]).strip(),
+                "cmd": r.get("cmd", ""), "ai": judged.get(p),
+            })
+    out.sort(key=lambda x: (0 if x["tier"] == "green" else 1, -x.get("size_kb", 0)))
+
+    # 规则表认不出的目录（info）——不参与清理，但把 AI 判断摆出来（这正是 Jev 的价值）
+    try:
+        kids = list(scan.get("children", []))
+        covered = {c.get("parent") for c in kids}
+        for _grp, lst in (scan.get("dir_groups") or {}).items():
+            for it in lst:
+                if it.get("path") not in covered and it.get("size_kb", 0) > 0:
+                    kids.append(it)
+    except Exception:                                                 # noqa: BLE001
+        kids = []
+    known = {i["path"] for i in out}
+    unknown = []
+    for it in sorted(kids, key=lambda x: -x.get("size_kb", 0)):
+        p = it.get("path", "")
+        if not p or p in known:
+            continue
+        try:
+            tier, _rule = report.classify(p, it.get("size_kb", 0))
+        except Exception:                                             # noqa: BLE001
+            continue
+        if tier != "info":
+            continue
+        ai = judged.get(p)
+        unknown.append({
+            "path": p, "name": it.get("name", p.split("/")[-1]), "size": it.get("size_h", ""),
+            "size_kb": it.get("size_kb", 0), "tier": "unknown", "selectable": False,
+            "note": ("AI 判断：" + str(ai.get("advice", ""))) if ai
+                    else "规则表认不出这个目录 —— 点下面的「运行 AI 判断」让 Jev 看一眼",
+            "cmd": "", "ai": ai,
+        })
+    listed_unknown = [u for u in unknown if u["ai"]] + [u for u in unknown if not u["ai"]][:8]
+    return out + listed_unknown
+
+
+def judged_summary() -> dict:
+    if not os.path.exists(JUDGED_JSON):
+        return {}
+    try:
+        with open(JUDGED_JSON, encoding="utf-8") as f:
+            d = json.load(f)
+        rows = d.get("judged", [])
+        by = {}
+        for r in rows:
+            by[r.get("tier", "?")] = by.get(r.get("tier", "?"), 0) + 1
+        return {"judged_at": d.get("judged_at", ""), "model": d.get("model", ""),
+                "count": d.get("count", len(rows)), "by_tier": by}
+    except (OSError, json.JSONDecodeError):
+        return {}
 
 
 def clean_output() -> str:
@@ -255,6 +371,14 @@ class Handler(BaseHTTPRequestHandler):
         if path == "/api/whitelist":
             rc, out = run_script("clean.py", ["--whitelist", "list"], timeout=60)
             return self._json({"output": out})
+        if path == "/api/items":
+            return self._json({"items": build_items(), "judged": judged_summary()})
+        if path == "/api/typesafe":
+            configured = bool(os.environ.get("TYPESAFE_API_KEY") or
+                              (os.path.exists(TYPESAFE_KEY) and open(TYPESAFE_KEY, encoding="utf-8").read().strip()))
+            return self._json({"configured": configured,
+                               "source": "env" if os.environ.get("TYPESAFE_API_KEY") else ("file" if configured else "none"),
+                               "path": TYPESAFE_KEY})
         if path == "/api/quit":
             self._json({"ok": True})
             self.wfile.flush()
@@ -292,7 +416,18 @@ class Handler(BaseHTTPRequestHandler):
                 args.append("--apply")
                 if body.get("rm"):
                     args.append("--rm")
-            if body.get("include_yellow"):
+            # 逐项勾选：把选中的路径写成选择文件，clean.py 只做交集（不会扩大范围）
+            paths = body.get("paths")
+            if paths is not None:
+                if not isinstance(paths, list) or not paths:
+                    return self._json({"ok": False, "error": "没有勾选任何项"}, 400)
+                try:
+                    with open(SELECT_JSON, "w", encoding="utf-8") as f:
+                        json.dump(paths, f, ensure_ascii=False)
+                except OSError as exc:
+                    return self._json({"ok": False, "error": "写入选择文件失败：%s" % exc}, 500)
+                args += ["--select-file", SELECT_JSON, "--include-yellow"]
+            elif body.get("include_yellow"):
                 args.append("--include-yellow")
             before = disk_stats().get("free_gb")
             with ST.lock:
@@ -304,7 +439,51 @@ class Handler(BaseHTTPRequestHandler):
                 ST.started_at = 0.0
             after = disk_stats().get("free_gb")
             return self._json({"ok": rc == 0, "mode": mode, "output": out,
+                               "selected": len(paths) if isinstance(paths, list) else None,
                                "free_before_gb": before, "free_after_gb": after})
+
+        if path == "/api/judge":
+            if not os.path.exists(SCAN_JSON):
+                return self._json({"ok": False, "error": "先跑扫描"}, 400)
+            if not (os.environ.get("TYPESAFE_API_KEY") or os.path.exists(TYPESAFE_KEY)):
+                return self._json({"ok": False, "error": "未配置 TypeSafe/Jev 的 key"}, 400)
+            args = [SCAN_JSON, "--out", JUDGED_JSON]
+            if body.get("top"):
+                args += ["--top", str(int(body["top"]))]
+            if body.get("batch"):
+                args += ["--batch", str(int(body["batch"]))]
+            if body.get("only_unknown", True):
+                args.append("--only-unknown")
+            with ST.lock:
+                ST.phase = "judging"
+                ST.started_at = time.time()
+            rc, out = run_script("judge.py", args, timeout=900)
+            with ST.lock:
+                ST.phase = "scanning_done"
+                ST.started_at = 0.0
+            if rc != 0:
+                return self._json({"ok": False, "error": "Jev 判断失败", "output": out[-1500:]}, 500)
+            try:
+                make_report(use_judge=True)          # 重生成报告，把 AI 判断并进去
+            except Exception as exc:                                  # noqa: BLE001
+                log("report with judge failed: %s" % exc)
+            return self._json({"ok": True, "output": out[-1500:], "judged": judged_summary()})
+
+        if path == "/api/typesafe":
+            key = (body.get("key") or "").strip()
+            if not key:
+                return self._json({"ok": False, "error": "key 不能为空"}, 400)
+            if "\n" in key or len(key) > 300:
+                return self._json({"ok": False, "error": "key 格式不对"}, 400)
+            try:
+                os.makedirs(os.path.dirname(TYPESAFE_KEY), exist_ok=True)
+                with open(TYPESAFE_KEY, "w", encoding="utf-8") as f:
+                    f.write(key + "\n")
+                os.chmod(TYPESAFE_KEY, 0o600)
+                log("typesafe key saved to %s" % TYPESAFE_KEY)   # 只记路径，不记内容
+                return self._json({"ok": True, "configured": True, "path": TYPESAFE_KEY})
+            except OSError as exc:
+                return self._json({"ok": False, "error": "写入失败：%s" % exc}, 500)
 
         if path == "/api/whitelist":
             action = body.get("action")
