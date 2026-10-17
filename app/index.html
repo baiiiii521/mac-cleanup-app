@@ -187,14 +187,14 @@ button.expand{margin-top:10px;align-self:flex-start}
 .verdict.mute{color:var(--paper-faint)}
 .path{grid-column:1/-1;font-family:var(--mono);font-size:12.5px;color:#BCAB8F;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.note{grid-column:1/-1;font-size:12.5px;color:var(--paper-dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{grid-column:1/-1;font-size:12.8px;color:var(--paper-dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card.fixed .nm{color:var(--paper-dim)}
 
 /* 每张卡自己的动作（单条直接清） */
 .card-actions{grid-column:4;display:flex;justify-content:flex-end;gap:6px}
 button.act{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 11px;border-radius:2px;
-  background:linear-gradient(180deg,#2A2116,#1D1811);border-color:rgba(240,169,59,.28);color:#F7D79A;
-  opacity:.42;transition:opacity .2s,transform .24s var(--spring),border-color .2s,background .2s}
+  background:linear-gradient(180deg,#2E2417,#201A12);border-color:rgba(240,169,59,.42);color:#FBE0AE;
+  opacity:.82;transition:opacity .2s,transform .24s var(--spring),border-color .2s,background .2s}
 .card:hover button.act,.card:focus-within button.act,button.act:focus-visible{opacity:1}
 button.act:hover{transform:translateY(-2px) scale(1.03);border-color:rgba(255,203,115,.7);background:linear-gradient(180deg,#362917,#231C11)}
 .card.releasing button.act,.card.seen button.act{display:none}
@@ -344,19 +344,21 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
         <canvas id="drum" width="904" height="904" aria-label="磁盘占用与清单体量的立体视图"
                 title="拖动可以转动这只鼓"></canvas>
         <div class="drum-read">
-          <div class="free" id="freeNum">—<small>GB 可用</small></div>
+          <div class="free" id="freeNum">—<small>GB 可写入</small></div>
         </div>
       </div>
       <p class="drum-sub" id="drumSub">占用率 —</p>
       <p class="drum-cap" id="drumCap">鼓里的液面＝磁盘占用（越高越满）；鼓里立着的每一张卡＝清单里的一项，卡的高度是它的体量（对数刻度）；被抽出来发亮的就是你勾选的；
-        上口那圈青色弧＝还没被占用的空间。可以拖动转动它。</p>
+        可以拖动转动它。（macOS 会留一部分空间给快照与系统保留，所以「可写入」加上「已用」不会正好等于容量。）</p>
       <div class="drum-legend">
         <span><i class="dot" style="background:#F0A93B"></i>可安全清理</span>
         <span><i class="dot" style="background:#C4755C"></i>需你判断</span>
         <span><i class="dot" style="background:#7FD1C4"></i>系统管控</span>
       </div>
       <dl class="facts">
-        <div class="fact"><dt>已用 / 总容量</dt><dd id="factUsed">—</dd></div>
+        <div class="fact"><dt>可写入空间</dt><dd id="factFree">—</dd></div>
+        <div class="fact"><dt>已用 / 磁盘容量</dt><dd id="factUsed">—</dd></div>
+        <div class="fact"><dt>占用率</dt><dd id="factPct">—</dd></div>
         <div class="fact"><dt>清理候选</dt><dd id="factCand">—</dd></div>
         <div class="fact"><dt>分区</dt><dd id="factMount">—</dd></div>
       </dl>
@@ -719,7 +721,7 @@ const drum = (function(){
     }
 
     const now = performance.now();
-    const dt = lastT ? Math.min(0.1, (now - lastT)/1000) : 0.016;
+    const dt = lastT ? Math.min(0.5, (now - lastT)/1000) : 0.016;
     lastT = now;
     if (!dragging && !RM) spin += dt*0.09*auto;
     const ease = k => 1 - Math.exp(-k*dt);        // 按时间收敛，帧率再低也会到位
@@ -850,7 +852,7 @@ function renderDrawers(items){
     const t = TIER[tier], total = list.reduce((s,i) => s+(i.size_kb||0), 0);
     const selList = list.filter(i => SEL.has(i.path));
     const selKB = selList.reduce((s,i) => s+(i.size_kb||0), 0);
-    const hint = tier === "green" ? "勾选后可直接清，也可以点每条的「清理」只清那一项"
+    const hint = tier === "green" ? "可以点每条的「清理」，也可以勾好一起清"
               : tier === "yellow" ? "只有标「可自动清理」的纯缓存子目录能清，其余请按提示进对应 App 处理"
               : "AI 判断仅供参考，不能自动清理";
     return `<div class="drawer">
@@ -927,12 +929,12 @@ function rerender(){ renderDrawers(ITEMS); paintSpec(); updateSel(); }
 let FREE_SHOWN = null;
 function tickFree(gb){
   const el = $("freeNum");
-  if (FREE_SHOWN == null || gb === FREE_SHOWN || RM){ FREE_SHOWN = gb; el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  if (FREE_SHOWN == null || gb === FREE_SHOWN || RM){ FREE_SHOWN = gb; el.innerHTML = `${gb}<small>GB 可写入</small>`; return; }
   const from = FREE_SHOWN, t0 = performance.now(), dur = Math.min(1500, 420 + Math.abs(gb-from)*60);
   FREE_SHOWN = gb;
   (function step(now){
     const k = Math.min(1, (now-t0)/dur), e = 1 - Math.pow(1-k, 3);
-    el.innerHTML = `${(from + (gb-from)*e).toFixed(1)}<small>GB 可用</small>`;
+    el.innerHTML = `${(from + (gb-from)*e).toFixed(1)}<small>GB 可写入</small>`;
     if (k < 1) requestAnimationFrame(step);
   })(t0);
 }
@@ -945,7 +947,9 @@ async function refresh(){
   const d = s.disk || {};
   if (d.free_gb != null){
     tickFree(d.free_gb);
+    $("factFree").textContent = `${d.free_gb} GB`;
     $("factUsed").textContent = `${d.used_gb} / ${d.total_gb} GB`;
+    $("factPct").textContent = `${d.pct}%`;
     $("factMount").textContent = d.mount || "—";
     $("drumSub").textContent = `占用率 ${d.pct}% · 拖动可以转动这只鼓`;
     drum.set(d.pct);
@@ -953,6 +957,9 @@ async function refresh(){
   const scanning = PHASE === "scanning", judging = PHASE === "judging", busy = scanning || judging || PHASE === "cleaning";
   $("btnScan").disabled = busy;
   $("btnScan").textContent = scanning ? `扫描中 ${Math.round(ELAPSED)}s` : "开始体检";
+  const hasItems = ITEMS.length > 0;
+  $("btnScan").classList.toggle("primary", !hasItems);
+  $("btnCleanSel").classList.toggle("primary", hasItems);
   $("btnReport").disabled = !s.has_scan;
   $("btnJudge").disabled = busy || !s.has_scan;
   $("btnJudge").textContent = judging ? `判断中 ${Math.round(ELAPSED)}s` : "运行 AI 判断";
