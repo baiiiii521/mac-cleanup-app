@@ -1,0 +1,75 @@
+{
+  "schema": "impeccable:design-json 1",
+  "world": "档案馆 · 除尘与退役（v3 档案鼓）",
+  "tokens": {
+    "color": {
+      "ink-900": "#0B0906",
+      "ink-850": "#12100B",
+      "ink-800": "#17140F",
+      "ink-750": "#1E1A14",
+      "ink-700": "#241F17",
+      "ink-650": "#2C251C",
+      "paper": "#F6EAD4",
+      "paper-dim": "#D6C6AA",
+      "paper-faint": "#B5A488",
+      "lamp": "#F0A93B",
+      "lamp-hi": "#FFCB73",
+      "clay": "#C4755C",
+      "cyan": "#7FD1C4",
+      "vermilion": "#E4572E"
+    },
+    "semantics": {
+      "green|可安全清理": "lamp",
+      "yellow|需你判断": "clay",
+      "unknown|系统管控": "cyan",
+      "破坏性动作": "vermilion",
+      "成功反馈": "paper(#E8DAC0)",
+      "警告": "lamp"
+    },
+    "radius": {
+      "card": "3px",
+      "tab": "4px 12px 0 0"
+    },
+    "motion": {
+      "spring": "cubic-bezier(.2,1.28,.3,1)",
+      "ease": "1-exp(-k*dt)",
+      "reduced-motion": "关闭粒子/光柱/过渡"
+    },
+    "type": {
+      "h1": "36px/600/-0.035em",
+      "readout": "50px mono/600/-0.04em",
+      "title": "15.5px/600",
+      "body": "12.5-14.5px",
+      "micro": "11-12px mono/.03-.16em",
+      "faces": "系统无衬线 + ui-monospace（离线约束：不自托管字体）"
+    }
+  },
+  "signature": "勾选抽出半个身位 → 执行时卡片升起散成灯下尘埃 → 螺旋吸入档案鼓 → 冲击波 + 闪光 → 液位下降 + 可用空间跳格 → 盖「已退役」章",
+  "instrument": "档案鼓：真 3D 软件渲染（rotY .5 / rotX .40 / F 1430）；鼓里每张卡＝清单一项（高度=log 体量）；液位=磁盘占用（圆盘液面 + 读数）；可拖动 + 指针视差",
+  "components": [
+    "paper button (primary/danger/ghost)",
+    "paper checkbox",
+    "catalog card with ruler + per-row clean",
+    "drawer tab + collapsible body",
+    "execution gate (3 lines)",
+    "batch confirm sheet",
+    "register log",
+    "drum instrument"
+  ],
+  "files": {
+    "surface": "app/index.html",
+    "productTruth": "PRODUCT.md",
+    "surfaceBrief": ".impeccable/surfaces/app-index-html.md",
+    "reviewShots": [
+      ".impeccable/review/desktop.png",
+      ".impeccable/review/mobile.png",
+      ".impeccable/review/drum-closeup.png"
+    ]
+  },
+  "constraints": [
+    "单文件零第三方依赖离线可用",
+    "引擎接口与安全锁不变",
+    "键盘可达 + reduced-motion",
+    "对比度 ≥4.5:1"
+  ]
+}
