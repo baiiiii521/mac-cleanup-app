@@ -16,6 +16,10 @@ if [ -f "$STATE/port" ]; then
   fi
 fi
 
+# 1b) 清掉可能残留的旧服务（上次没退干净时会出现两个进程抢端口）
+pkill -f "$RES/server.py" 2>/dev/null || true
+sleep 0.3
+
 # 2) 选 python：技能脚本只用标准库，3.9+ 即可
 PY=""
 for c in /usr/bin/python3 /opt/homebrew/bin/python3 /usr/local/bin/python3 "$HOME/.local/bin/python3.11"; do

@@ -257,7 +257,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json({"output": out})
         if path == "/api/quit":
             self._json({"ok": True})
-            threading.Timer(0.4, lambda: os._exit(0)).start()
+            self.wfile.flush()
+            threading.Timer(0.8, lambda: os._exit(0)).start()
             return
         return self._text("not found", 404)
 
