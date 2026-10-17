@@ -288,8 +288,9 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
 /* ---------- 响应 ---------- */
 @media (max-width:1180px){
   .shell{padding:26px 24px 56px}
-  .actbar{position:sticky;top:0;z-index:30;padding:10px 0 12px;
-    background:linear-gradient(180deg,rgba(11,9,6,.97),rgba(11,9,6,.78) 68%,rgba(11,9,6,0))}
+  .actbar{padding:6px 0 10px}
+  .actbar .rail:first-of-type{position:sticky;top:0;z-index:30;padding:10px 0;
+    background:linear-gradient(180deg,rgba(11,9,6,.97),rgba(11,9,6,.80) 72%,rgba(11,9,6,0))}
   h1{font-size:29px}
   .drum-wrap{max-width:392px}
   .free{font-size:48px}
@@ -300,6 +301,8 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
 }
 @media (max-width:560px){
   .stage{gap:22px}
+  /* 手机上按钮要换行，吸顶条会挡住列表 → 首屏已经有控件了，这里就不吸顶 */
+  .actbar .rail:first-of-type{position:static;background:none;padding:0}
   .card{grid-template-columns:20px 40px minmax(0,1fr);padding:11px 12px}
   .sz{grid-column:3;text-align:left}
   .card-actions{grid-column:3;justify-content:flex-start}
@@ -551,7 +554,7 @@ const drum = (function(){
   const S = 904, C = S/2;
   const R = 244, HH = 224, F = 1430;
   let rotY = 0.5, rotX = 0.40, spin = 0, auto = 1, dragging = false;
-  let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0, started = false;
+  let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0, started = false, occSetAt = 0;
   let SPEC = [], CONSUMED = new Set(), EXTRA = new Map();
 
   function project(p){
@@ -569,6 +572,7 @@ const drum = (function(){
   function maxKB(){ return Math.max.apply(null, SPEC.map(i => i.kb).concat([1])); }
   function draw(){
     if (!isFinite(rotY) || !isFinite(rotX)){ rotY = 0.5; rotX = 0.40; }   // 姿态兜底
+    if (RM){ occ = occTarget; occAnim = occAnim = occTarget; grown = 1; }  // RM：不要缓动，立刻画真值
     x.clearRect(0,0,S,S);
     const n = SPEC.length || 1, step = 6.2832/n, mKB = maxKB();
     const yTop = -HH, yBot = HH;
@@ -735,9 +739,15 @@ const drum = (function(){
     lastT = now;
     if (!dragging && !RM) spin += dt*0.09*auto;
     const ease = k => 1 - Math.exp(-k*dt);        // 按时间收敛，帧率再低也会到位
-    grown += (1-grown)*ease(3.4);
-    occAnim += (occ - occAnim)*ease(3.6);
-    if (occTarget > occ) occ += (occTarget - occ)*ease(3.6);
+    // 目标值变过 1.2 秒还没缓动到位（低帧率/切到后台被节流）→ 直接落到真值：
+    // 仪表宁可"跳"到位，也不能长期显示一个假的读数。
+    if (occSetAt && now - occSetAt > 1200){
+      grown = 1; occ = occAnim = occTarget;
+    } else {
+      grown += (1-grown)*ease(3.4);
+      occAnim += (occ - occAnim)*ease(3.6);
+      if (occTarget > occ) occ += (occTarget - occ)*ease(3.6);
+    }
     flash *= Math.exp(-4.2*dt); shock *= Math.exp(-2.6*dt);
     if (!RM) requestAnimationFrame(draw);
   }
@@ -752,6 +762,7 @@ const drum = (function(){
       rotY = downRot + (e.clientX-downX)*0.009;
       rotX = Math.max(.12, Math.min(.72, downRotX - (e.clientY-downY)*0.005));
       auto = 0;
+      schedule();                        // RM 下拖动也要立刻重画
     } else {
       const r = c.getBoundingClientRect();
       const nx = (e.clientX-r.left)/r.width - .5, ny = (e.clientY-r.top)/r.height - .5;
@@ -774,7 +785,11 @@ const drum = (function(){
   // 否则这只仪器会停在初始空帧上撒谎（空鼓 + 液位 0%，旁边文字却写 66%）。
   function schedule(){ if (RM && started) draw(); }
   return {
-    set(pct){ occTarget = Math.max(0, Math.min(1, pct/100)); schedule(); },
+    set(pct){
+      const v = Math.max(0, Math.min(1, pct/100));
+      if (v !== occTarget){ occTarget = v; occSetAt = performance.now(); }
+      schedule();
+    },
     spec(list){ SPEC = list; schedule(); },
     consume(paths){ paths.forEach(p => CONSUMED.add(p)); schedule(); },
     eat(paths){
