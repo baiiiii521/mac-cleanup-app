@@ -1,14 +1,41 @@
 # Mac 清理助手（mac-cleanup-app）
 
-把 `macos-deep-optimize` 技能（只读扫描 + 三色分级 + 安全清理）封装成一个**双击就能用的 macOS 应用**——
-不用开终端、不用记命令，打开就是界面。
+把 `macos-deep-optimize` 技能（只读扫描 + 三色分级 + 安全清理）封装成**双击就能用的 macOS 应用**——
+不用开终端、不用记命令，打开就是界面。**默认是原生 AppKit 窗口应用**（不是网页）。
 
-> 已安装：**~/Applications/Mac 清理助手.app**
-> 打开方式：Finder → 应用程序 → 「Mac 清理助手」；或启动台按 F4 搜索；或 `open ~/Applications/Mac\ 清理助手.app`
+> 已安装：**~/Applications/Mac 清理助手.app**（原生 GUI 版）
+> 打开方式：Finder → 应用程序 →「Mac 清理助手」；或启动台搜索；或 `open ~/Applications/Mac\ 清理助手.app`
+>
+> 另一个形态：**网页版外壳**（`bash build.sh` 装成「Mac 清理助手（网页版）.app」）——界面在浏览器里，手机也能看。
+> 原生版菜单/按钮里点「浏览器版界面」也能打开同一个引擎的网页界面。
+
+## 两种形态
+
+| | 原生 GUI（默认，`native/`） | 网页版外壳（`app/`） |
+|---|---|---|
+| 界面 | Swift/AppKit 原生窗口：按钮、复选框、表格、日志区 | 浏览器里的 HTML 界面 |
+| 依赖 | macOS 自带（`swiftc` 编译，不需要 Xcode） | 系统 python3 + 浏览器 |
+| 启动 | App 自己拉起本地引擎（127.0.0.1 随机端口），退出时关掉 | 启动器拉起服务并打开浏览器 |
+
+两者用**同一个引擎**（`Resources/server.py` + 技能脚本），清理规则、安全锁、AI 判断行为完全一致。
+
+## 自检（不点按钮也能验一遍）
+
+```bash
+"$HOME/Applications/Mac 清理助手.app/Contents/MacOS/MacCleanup" --selftest
+```
+
+走的是界面里按钮**同一条代码路径**（同一个 `api()` 调用、同样的请求体），打印：引擎是否起来、
+清单条数、磁盘信息、AI 判断是否并入、勾选 2 项是否只处理 2 项、确认文本不对是否被拒、空勾选是否被拒……
+实测 10 项全过。
 
 ## 打不开？看这里
 
-双击图标没反应时，**先看日志**：`~/.local/state/mac-cleanup-app/launch.log`（每次启动都留痕）。
+**原生版**：点了图标没看到窗口？先看是不是被别的窗口盖住了——现在已经用 `orderFrontRegardless`
+强制抬到最前，再点一次 Dock 图标也会把窗口带到前面（`applicationShouldHandleReopen`）。
+实在想看细节，终端里跑一次自检：`".../MacCleanup" --selftest`。
+
+**网页版**：双击图标没反应时，**先看日志**：`~/.local/state/mac-cleanup-app/launch.log`（每次启动都留痕）。
 
 - 现象：点了图标什么都没有
   原因：这个应用没有窗口，界面在浏览器里。启动器曾把服务挂在前台运行，macOS 于是认为

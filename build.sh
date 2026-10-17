@@ -13,7 +13,7 @@
 set -euo pipefail
 
 SRC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-APP_NAME="Mac 清理助手.app"
+APP_NAME="Mac 清理助手（网页版）.app"     # 注意：原生 GUI 版由 native/build_native.sh 装成「Mac 清理助手.app」
 DEST_DIR="$HOME/Applications"
 DEST="$DEST_DIR/$APP_NAME"
 SKILL_SCRIPTS="${SKILL_SCRIPTS:-$HOME/.hermes/skills/devops/macos-deep-optimize/scripts}"
