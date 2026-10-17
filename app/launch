@@ -1,0 +1,38 @@
+#!/bin/bash
+# Mac 清理助手 · 启动器（.app 双击入口）
+# 作用：1) 已有服务在跑就只开浏览器；2) 否则挑一个 python3 起本地服务并自动打开浏览器。
+set -uo pipefail
+
+RES="$(cd "$(dirname "$0")/../Resources" && pwd)"
+STATE="$HOME/.local/state/mac-cleanup-app"
+mkdir -p "$STATE"
+
+# 1) 复用已在运行的服务，避免起第二个
+if [ -f "$STATE/port" ]; then
+  PORT="$(cat "$STATE/port" 2>/dev/null || true)"
+  if [ -n "${PORT:-}" ] && curl -s -m 2 "http://127.0.0.1:$PORT/api/state" >/dev/null 2>&1; then
+    open "http://127.0.0.1:$PORT/"
+    exit 0
+  fi
+fi
+
+# 2) 选 python：技能脚本只用标准库，3.9+ 即可
+PY=""
+for c in /usr/bin/python3 /opt/homebrew/bin/python3 /usr/local/bin/python3 "$HOME/.local/bin/python3.11"; do
+  if [ -x "$c" ]; then PY="$c"; break; fi
+done
+if [ -z "$PY" ]; then
+  osascript -e 'display alert "Mac 清理助手" message "找不到可用的 python3。请先安装命令行工具：xcode-select --install"'
+  exit 1
+fi
+
+# 3) 技能脚本目录：优先用实时技能（跟着技能更新走），否则用 app 自带副本
+if [ -z "${MAC_CLEAN_SKILL:-}" ]; then
+  if [ -f "$HOME/.hermes/skills/devops/macos-deep-optimize/scripts/scan.py" ]; then
+    export MAC_CLEAN_SKILL="$HOME/.hermes/skills/devops/macos-deep-optimize/scripts"
+  else
+    export MAC_CLEAN_SKILL="$RES/skill-scripts"
+  fi
+fi
+
+exec "$PY" "$RES/server.py" --open
