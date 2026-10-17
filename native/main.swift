@@ -189,7 +189,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource,
                          backing: .buffered, defer: false)
         w.title = "Mac 清理助手"
         w.minSize = NSSize(width: 900, height: 620)
-        w.center()
         w.setFrameAutosaveName("MacCleanupWeb")
         w.contentView = wv
         window = w
@@ -197,6 +196,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource,
         w.makeKeyAndOrderFront(nil)
         w.orderFrontRegardless()
         NSApp.activate(ignoringOtherApps: true)
+        sanitizeFrame("上屏后")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in self?.sanitizeFrame("0.5s 后") }
+    }
+
+    /// 自动保存的窗口位置可能被写坏（太小 / 跑到所有屏幕之外）→ 回到一个正常的窗口。
+    /// 注意：AppKit 会在窗口第一次上屏时才应用保存的位置，所以这个检查必须放在上屏之后。
+    func sanitizeFrame(_ why: String) {
+        guard let w = window else { return }
+        let f = w.frame
+        let onSomeScreen = NSScreen.screens.contains { $0.visibleFrame.intersects(f) }
+        let bad = f.width < 900 || f.height < 620 || !onSomeScreen
+        winLog("sanitize(\(why)): \(Int(f.width))x\(Int(f.height)) @ \(Int(f.origin.x)),\(Int(f.origin.y)) → "
+               + (bad ? "重置 1280x900 居中" : "保留"))
+        guard bad else { return }
+        w.setFrame(NSRect(x: 0, y: 0, width: 1280, height: 900), display: true)
+        w.center()
+        w.saveFrame(usingName: "MacCleanupWeb")
+    }
+
+    func winLog(_ line: String) {
+        let path = stateDir() + "/window.log"
+        let ts = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
+        let text = "[\(ts)] \(line)\n"
+        if let fh = FileHandle(forWritingAtPath: path) {
+            fh.seekToEndOfFile(); fh.write(text.data(using: .utf8)!); try? fh.close()
+        } else {
+            try? text.write(toFile: path, atomically: true, encoding: .utf8)
+        }
     }
 
     func splash(_ text: String) {
