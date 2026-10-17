@@ -7,6 +7,7 @@
 // 安全不变：默认预览；执行要输入「确认清理」；逐项勾选走 --select-file（只做交集）。
 
 import Cocoa
+import WebKit
 
 // MARK: - 引擎位置
 
@@ -107,9 +108,10 @@ enum Row {
 
 // MARK: - App
 
-final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource, NSTableViewDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource, NSTableViewDelegate, WKUIDelegate {
 
     var window: NSWindow!
+    var webView: WKWebView?
     var engine: Process?
     var port = 0
     var engineReady = false
@@ -159,10 +161,76 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource,
             return
         }
         buildMenu()
-        buildWindow()
+        // 默认：窗口里就是这个界面本身（同一份 HTML，手机/浏览器打开也是它）
+        // 加 --classic 则回退到 AppKit 原生控件版界面
+        let classic = CommandLine.arguments.contains("--classic")
+        classic ? buildWindow() : buildWebWindow()
         startEngine()
-        Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in self?.poll() }
-        logLine("界面已就绪；引擎端口 \(port)")
+        if classic {
+            Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in self?.poll() }
+            logLine("界面已就绪（AppKit 版）；引擎端口 \(port)")
+        } else {
+            waitForEngine(try: 0)
+            logLine("窗口已就绪，等待引擎；端口 \(port)")
+        }
+    }
+
+    // MARK: Web 版窗口（默认）
+
+    func buildWebWindow() {
+        let cfg = WKWebViewConfiguration()
+        cfg.defaultWebpagePreferences.allowsContentJavaScript = true
+        let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: 1280, height: 900), configuration: cfg)
+        wv.uiDelegate = self
+        wv.autoresizingMask = [.width, .height]
+        webView = wv
+        let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 900),
+                         styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                         backing: .buffered, defer: false)
+        w.title = "Mac 清理助手"
+        w.minSize = NSSize(width: 900, height: 620)
+        w.center()
+        w.setFrameAutosaveName("MacCleanupWeb")
+        w.contentView = wv
+        window = w
+        splash("正在启动本机引擎…")
+        w.makeKeyAndOrderFront(nil)
+        w.orderFrontRegardless()
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func splash(_ text: String) {
+        let html = """
+        <!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+        body{margin:0;height:100vh;display:flex;align-items:center;justify-content:center;background:#100D0A;
+             color:#F4E7CF;font:14px -apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif}
+        .b{text-align:center}.t{font-size:19px;font-weight:600;letter-spacing:-.02em;margin-bottom:9px}
+        .s{color:#B3A288;font-size:13px}
+        </style></head><body><div class="b"><div class="t">Mac 清理助手</div><div class="s">\(text)</div></div></body></html>
+        """
+        webView?.loadHTMLString(html, baseURL: nil)
+    }
+
+    func waitForEngine(try n: Int) {
+        api("GET", "/api/state", nil, timeout: 8) { [weak self] s in
+            guard let self = self else { return }
+            if s["phase"] != nil {
+                self.webView?.load(URLRequest(url: URL(string: "http://127.0.0.1:\(self.port)/")!))
+                self.logLine("界面已载入：http://127.0.0.1:\(self.port)/")
+            } else if n < 40 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { self.waitForEngine(try: n + 1) }
+            } else {
+                self.splash("引擎没能起来，看日志：\(stateDir())/engine.log")
+                self.logLine("❌ 引擎启动超时")
+            }
+        }
+    }
+
+    // 页面里的 window.open（完整报告 / 在浏览器打开）交给系统浏览器
+    func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration,
+                 for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        if let u = navigationAction.request.url { NSWorkspace.shared.open(u) }
+        return nil
     }
 
     /// 走界面同一条代码路径（api 调用 + 请求体），把结果打到标准输出。
@@ -229,6 +297,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource,
         appMenu.addItem(withTitle: "关于 Mac 清理助手", action: #selector(about), keyEquivalent: "")
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "在浏览器中打开界面", action: #selector(openWeb), keyEquivalent: "b")
+        appMenu.addItem(withTitle: "重新载入界面", action: #selector(reloadUI), keyEquivalent: "r")
         appMenu.addItem(NSMenuItem.separator())
         appMenu.addItem(withTitle: "退出", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
         appItem.submenu = appMenu
@@ -250,6 +319,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSTableViewDataSource,
     }
 
     @objc func openWeb() { NSWorkspace.shared.open(URL(string: "http://127.0.0.1:\(port)/")!) }
+
+    @objc func reloadUI() {
+        webView?.load(URLRequest(url: URL(string: "http://127.0.0.1:\(port)/")!))
+    }
 
     // MARK: 引擎
 

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac 清理助手</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#171a21; --card2:#1d222b; --line:#262c38;
+    --fg:#e8ecf4; --dim:#98a2b3; --green:#2fbf71; --yellow:#e8b339; --red:#e5534b;
+    --accent:#4c8dff; --accent2:#7aa7ff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:15px/1.6 -apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",Arial,sans-serif}
+  .wrap{max-width:980px;margin:0 auto;padding:28px 20px 60px}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:24px;margin:0;letter-spacing:.5px}
+  .sub{color:var(--dim);font-size:13px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin:16px 0}
+  .card h2{font-size:15px;margin:0 0 12px;color:var(--dim);font-weight:600;letter-spacing:.3px}
+  .disk{display:flex;align-items:flex-end;gap:22px;flex-wrap:wrap}
+  .disk .big{font-size:34px;font-weight:700;line-height:1.1}
+  .disk .big small{font-size:14px;color:var(--dim);font-weight:400;margin-left:6px}
+  .bar{height:10px;border-radius:6px;background:var(--card2);overflow:hidden;margin:14px 0 6px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  button{font:inherit;color:var(--fg);background:var(--card2);border:1px solid var(--line);
+         border-radius:10px;padding:8px 14px;cursor:pointer;transition:.15s}
+  button:hover{border-color:var(--accent);background:#202634}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{background:var(--accent2);border-color:var(--accent2)}
+  button.danger{border-color:#6b2f2c;color:#ffb4b0}
+  button.danger:hover{background:#3a1f1e;border-color:var(--red)}
+  button.mini{padding:5px 10px;font-size:13px}
+  input[type=text],input[type=password]{font:inherit;background:#11141a;border:1px solid var(--line);
+         color:var(--fg);border-radius:9px;padding:8px 12px;min-width:200px}
+  pre{background:#0b0d11;border:1px solid var(--line);border-radius:10px;padding:12px;
+      overflow:auto;max-height:360px;font:12px/1.55 ui-monospace,SFMono-Regular,Menlo,monospace;
+      white-space:pre-wrap;word-break:break-all;color:#cbd5e1}
+  .note{color:var(--dim);font-size:12.5px}
+  .banner{border-radius:10px;padding:11px 14px;margin:12px 0;font-size:13.5px;display:none;white-space:pre-wrap}
+  .banner.ok{display:block;background:#13251b;border:1px solid #245035;color:#9fe3b9}
+  .banner.err{display:block;background:#2a1614;border:1px solid #5d2b27;color:#ffb4b0}
+  .banner.warn{display:block;background:#2a2314;border:1px solid #5c4a1e;color:#f0d79a}
+  .spin{display:inline-block;width:12px;height:12px;border:2px solid var(--dim);
+        border-top-color:transparent;border-radius:50%;animation:sp 1s linear infinite;vertical-align:-2px}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .group{margin-top:14px}
+  .group h3{font-size:13.5px;margin:0 0 8px;color:var(--dim);font-weight:600}
+  .item{display:grid;grid-template-columns:26px 88px 1fr;gap:10px;align-items:start;
+        padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:var(--card2);margin:6px 0}
+  .item.dis{opacity:.62}
+  .item input[type=checkbox]{width:17px;height:17px;margin-top:3px;accent-color:var(--accent);cursor:pointer}
+  .item .sz{font-variant-numeric:tabular-nums;font-size:13.5px;white-space:nowrap;padding-top:1px}
+  .item .nm{font-weight:600;font-size:14px;word-break:break-all}
+  .item .pt{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--dim);word-break:break-all}
+  .item .nt{font-size:12.5px;color:var(--dim);margin-top:3px}
+  .badge{display:inline-block;font-size:11.5px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);
+         color:var(--dim);margin-left:6px;white-space:nowrap}
+  .badge.ai{border-color:#41266b;color:#cbb2ff;background:#1d1530}
+  .badge.no{color:#f0d79a;border-color:#5c4a1e}
+  .sum{font-variant-numeric:tabular-nums}
+  details{margin-top:10px}
+  summary{cursor:pointer;color:var(--accent2);font-size:13.5px}
+  footer{color:var(--dim);font-size:12px;margin-top:26px;border-top:1px solid var(--line);padding-top:14px}
+  code{background:#0b0d11;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🧹 Mac 清理助手</h1>
+    <span class="sub">只读扫描 → 你逐项勾选 → 才清理 · 数据只在本机</span>
+  </header>
+
+  <div class="card">
+    <h2>磁盘</h2>
+    <div class="disk">
+      <div>
+        <div class="big" id="free">—<small>GB 可用</small></div>
+        <div class="note" id="used">读取中…</div>
+      </div>
+      <div style="flex:1;min-width:260px">
+        <div class="bar"><i id="bar" style="width:0%"></i></div>
+        <div class="note" id="pct">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>第一步 · 体检（只读扫描，通常 1-3 分钟）</h2>
+    <div class="row">
+      <button class="primary" id="btnScan">开始体检</button>
+      <button id="btnReport" disabled>打开完整报告</button>
+      <span class="note" id="scanInfo"></span>
+    </div>
+    <div class="banner" id="bannerScan"></div>
+  </div>
+
+  <div class="card" id="tierCard" style="display:none">
+    <h2>体检结果 · 逐项勾选（默认全选绿灯项）</h2>
+    <div class="row" style="margin-bottom:4px">
+      <button class="mini" id="btnAll">全选</button>
+      <button class="mini" id="btnNone">全不选</button>
+      <button class="mini" id="btnBig">只选 ≥100 MB</button>
+      <button class="mini" id="btnCache">只选缓存类</button>
+      <button class="mini" id="btnInvert">反选</button>
+      <span class="sum note" id="selSum">—</span>
+    </div>
+    <div class="group">
+      <h3>🟢 可安全清理（纯缓存 / 可再生，勾选后可直接执行）</h3>
+      <div id="listGreen"></div>
+    </div>
+    <div class="group">
+      <h3>🟡 需你判断（含数据。只有标「可自动清理」的纯缓存子目录能勾选，其余请按提示进对应 App 处理）</h3>
+      <div id="listYellow"></div>
+    </div>
+    <div class="group" id="unknownGroup" style="display:none">
+      <h3>🤔 规则表认不出 · 让 AI 看一眼（仅供参考，不能自动清理）</h3>
+      <div id="listUnknown"></div>
+    </div>
+  </div>
+
+  <div class="card" id="aiCard" style="display:none">
+    <h2>🤖 AI 判断（TypeSafe / Jev）· 补规则表的盲区</h2>
+    <div class="row">
+      <span class="note" id="aiStatus">检查中…</span>
+      <input type="password" id="keyInput" placeholder="TypeSafe API key" style="display:none">
+      <button id="btnSaveKey" style="display:none">保存 key</button>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <label class="note">判断范围：最大的 <input type="text" id="judgeTop" value="15" style="min-width:64px;width:64px"> 个</label>
+      <label class="note"><input type="checkbox" id="judgeUnknown" checked> 只判断规则表认不出的</label>
+      <button id="btnJudge">运行 AI 判断</button>
+      <span class="note" id="judgeInfo"></span>
+    </div>
+    <details>
+      <summary>⚠️ 运行前要知道（隐私 + 成本）</summary>
+      <p class="note">Jev 是外部 API：会把<b>目录路径、大小、最后修改时间、子目录名</b>发到 TypeSafe 服务器，
+      换回「这是什么数据 / 能不能删 / 删了可不可恢复」的概率判断。结果是<b>参考</b>不是判决，最后仍由你拍板。
+      每个目录问 3 个问题、5 个一批。</p>
+    </details>
+    <div class="banner" id="bannerAI"></div>
+    <pre id="aiOut" style="display:none"></pre>
+  </div>
+
+  <div class="card" id="cleanCard" style="display:none">
+    <h2>第二步 · 清理（默认只预览，不动文件）</h2>
+    <div class="row">
+      <button id="btnPreview">预览选中的 <span id="selCount">0</span> 项</button>
+      <span class="note">预计释放：<b class="sum" id="selSize">0 MB</b></span>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="confirmText" placeholder="输入：确认清理">
+      <button class="danger" id="btnApply">执行清理（移到废纸篓，可逆）</button>
+    </div>
+    <div class="banner" id="bannerClean"></div>
+    <pre id="cleanOut" style="display:none"></pre>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="trashText" placeholder="输入：清空废纸篓">
+      <button class="danger" id="btnTrash">清空废纸篓（才真正释放空间）</button>
+    </div>
+    <p class="note" style="margin-top:10px">⚠️ 移到废纸篓 ≠ 释放空间：废纸篓和原文件在同一个卷，必须清空才回收。</p>
+  </div>
+
+  <div class="card">
+    <h2>工具箱</h2>
+    <div class="row">
+      <button id="btnWhitelist">查看保护名单</button>
+      <input type="text" id="wlPath" placeholder="~/Library/Caches/某个要保护的目录">
+      <button id="btnWlAdd">加入保护</button>
+      <button id="btnWlRemove">移出保护</button>
+      <button id="btnHistory">操作历史</button>
+    </div>
+    <div class="banner" id="bannerTool"></div>
+    <pre id="toolOut" style="display:none"></pre>
+    <details>
+      <summary>保护名单是什么？</summary>
+      <p class="note">加入保护名单的路径<b>永不清理</b>（三层安全模型：白名单 + 硬保护系统目录/HOME 一级目录 + 用户保护名单）。</p>
+    </details>
+  </div>
+
+  <footer>
+    本地服务：<code>127.0.0.1</code>，不联网（AI 判断除外，见其说明）。清理规则来自技能
+    <code>macos-deep-optimize</code>。
+    <button id="btnQuit" class="mini" style="margin-left:8px">关闭服务</button>
+  </footer>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let ITEMS = [], SELECTED = new Set(), TOUCHED = false, scanning = false, judging = false;
+
+async function api(path, body){
+  const opts = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
+  const r = await fetch(path, opts);
+  return await r.json().catch(()=>({ok:false,error:"响应解析失败"}));
+}
+function showBanner(el, kind, text){ el.className = "banner " + kind; el.textContent = text; }
+function mb(kb){
+  if (kb >= 1048576) return (kb/1048576).toFixed(2) + " GB";
+  if (kb >= 1024) return (kb/1024).toFixed(0) + " MB";
+  return Math.round(kb) + " KB";
+}
+const isCache = p => /\/Caches\//.test(p) || /\/\.cache\//.test(p) || /\/node_modules\//.test(p)
+                  || /DerivedData|CoreSimulator/.test(p) || /\/Logs\/?$/.test(p);
+const shortPath = p => p.replace(/^\/Users\/[^/]+/, "~");
+
+function aiBadge(ai){
+  if (!ai) return "";
+  const p = (ai.safe_to_delete == null) ? "?" : Math.round(ai.safe_to_delete * 100) + "%";
+  const rec = (ai.recoverability == null) ? "?" : ai.recoverability;
+  const t = {green:"可删", yellow:"拿不准", red:"别删"}[ai.tier] || "?";
+  const title = `Jev 判断：类别 ${ai.category_label || ai.category} · 可删概率 ${p} · 可恢复 ${rec} · 置信度 ${ai.category_confidence ?? "?"} · ${ai.advice || ""}`;
+  return ` <span class="badge ai" title="${title}">🤖 ${t} · 可删${p} · 恢复${rec}</span>`;
+}
+
+function itemHtml(it){
+  const checked = SELECTED.has(it.path);
+  return `<div class="item ${it.selectable ? "" : "dis"}">
+      <input type="checkbox" data-path="${it.path.replace(/"/g, "&quot;")}" ${checked ? "checked" : ""} ${it.selectable ? "" : "disabled"}>
+      <div class="sz">${it.size}</div>
+      <div>
+        <div class="nm">${it.name || it.path.split("/").pop()}${it.selectable ? "" : ' <span class="badge no">不可自动清理</span>'}${aiBadge(it.ai)}</div>
+        <div class="pt">${shortPath(it.path)}</div>
+        ${it.note ? `<div class="nt">${it.note}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+function renderItems(){
+  const green = ITEMS.filter(i => i.tier === "green");
+  const yellow = ITEMS.filter(i => i.tier === "yellow");
+  const unknown = ITEMS.filter(i => i.tier === "unknown");
+  $("listGreen").innerHTML = green.length ? green.map(itemHtml).join("") : '<p class="note">没有绿灯项。</p>';
+  $("listYellow").innerHTML = yellow.length ? yellow.map(itemHtml).join("") : '<p class="note">没有黄灯项。</p>';
+  $("unknownGroup").style.display = unknown.length ? "block" : "none";
+  $("listUnknown").innerHTML = unknown.map(itemHtml).join("");
+  document.querySelectorAll("#tierCard input[type=checkbox]").forEach(cb => {
+    cb.onchange = () => {
+      TOUCHED = true;
+      if (cb.checked) SELECTED.add(cb.dataset.path); else SELECTED.delete(cb.dataset.path);
+      updateSum();
+    };
+  });
+  updateSum();
+}
+
+function updateSum(){
+  let kb = 0, n = 0, cap = 0;
+  ITEMS.forEach(i => {
+    if (i.selectable) cap++;
+    if (SELECTED.has(i.path)) { kb += i.size_kb || 0; n++; }
+  });
+  $("selSum").textContent = `已选 ${n} / 可选 ${cap} 项 · ${mb(kb)}`;
+  $("selCount").textContent = n;
+  $("selSize").textContent = mb(kb);
+}
+
+async function refresh(){
+  let s;
+  try { s = await api("/api/state"); } catch(e){ return; }
+  if (s.disk && s.disk.free_gb != null){
+    $("free").innerHTML = s.disk.free_gb + "<small>GB 可用</small>";
+    $("used").textContent = `已用 ${s.disk.used_gb} GB / 共 ${s.disk.total_gb} GB（${s.disk.mount}）`;
+    $("bar").style.width = Math.min(100, s.disk.pct) + "%";
+    $("pct").textContent = `占用率 ${s.disk.pct}%`;
+  }
+  scanning = s.phase === "scanning";
+  judging  = s.phase === "judging";
+  $("btnScan").disabled = scanning || judging;
+  $("btnScan").innerHTML = scanning ? `<span class="spin"></span> 扫描中 ${s.elapsed}s` : "开始体检";
+  $("btnJudge").disabled = judging || !s.has_scan;
+  $("btnJudge").innerHTML = judging ? `<span class="spin"></span> 判断中 ${s.elapsed}s` : "运行 AI 判断";
+
+  if (s.error) showBanner($("bannerScan"), "err", s.error);
+  else if (scanning) showBanner($("bannerScan"), "warn", "正在只读扫描（通常 1-3 分钟，期间可继续用电脑）…");
+  else if (s.notice) showBanner($("bannerScan"), "ok", s.notice);
+
+  $("btnReport").disabled = !s.has_scan;
+  if (s.scan_at) $("scanInfo").textContent = `上次扫描：${s.scan_at}` + (s.scan_seconds ? `（耗时 ${s.scan_seconds}s）` : "");
+  if (s.judged && s.judged.count != null)
+    $("judgeInfo").textContent = `上次判断 ${s.judged.judged_at}（${s.judged.model}，${s.judged.count} 项）`;
+
+  const has = !!s.has_scan;
+  $("tierCard").style.display = has ? "block" : "none";
+  $("cleanCard").style.display = has ? "block" : "none";
+  $("aiCard").style.display = has ? "block" : "none";
+
+  if (has && Array.isArray(s.items)){
+    const strip = x => x.map(i => i.path + "|" + (i.ai ? "1" : "0")).join(",");
+    const changed = strip(ITEMS) !== strip(s.items);
+    ITEMS = s.items;
+    if (!TOUCHED) SELECTED = new Set(ITEMS.filter(i => i.selectable).map(i => i.path));
+    if (changed) renderItems(); else updateSum();
+  }
+}
+
+// ---- 快捷选择
+const setSel = fn => { TOUCHED = true; SELECTED = new Set(ITEMS.filter(fn).map(i => i.path)); renderItems(); };
+$("btnAll").onclick = () => setSel(i => i.selectable);
+$("btnNone").onclick = () => setSel(() => false);
+$("btnBig").onclick = () => setSel(i => i.selectable && (i.size_kb || 0) >= 102400);
+$("btnCache").onclick = () => setSel(i => i.selectable && isCache(i.path));
+$("btnInvert").onclick = () => {
+  TOUCHED = true;
+  const inv = new Set();
+  ITEMS.forEach(i => { if (i.selectable && !SELECTED.has(i.path)) inv.add(i.path); });
+  SELECTED = inv; renderItems();
+};
+
+// ---- 体检
+$("btnScan").onclick = async () => { showBanner($("bannerScan"), "warn", "已开始扫描…"); await api("/api/scan", {}); refresh(); };
+$("btnReport").onclick = async () => {
+  const r = await api("/api/report", {});
+  if (r.ok) window.open(r.url, "_blank"); else showBanner($("bannerScan"), "err", r.error || "报告生成失败");
+};
+
+// ---- AI 判断
+async function initAI(){
+  const t = await api("/api/typesafe");
+  if (t.configured){
+    $("aiStatus").innerHTML = `✅ 已配置 key（来源：${t.source === "env" ? "环境变量" : "~/.config/typesafe/key"}）`;
+    $("keyInput").style.display = "none"; $("btnSaveKey").style.display = "none";
+  } else {
+    $("aiStatus").innerHTML = "⚠️ 未配置 TypeSafe key —— 填一次即可（只写进 ~/.config/typesafe/key，权限 600）";
+    $("keyInput").style.display = "inline-block"; $("btnSaveKey").style.display = "inline-block";
+  }
+  if (t.path) $("aiStatus").title = "key 文件：" + t.path;
+}
+$("btnSaveKey").onclick = async () => {
+  const r = await api("/api/typesafe", {key: $("keyInput").value.trim()});
+  if (r.ok){ $("keyInput").value = ""; initAI(); showBanner($("bannerAI"), "ok", "key 已保存。"); }
+  else showBanner($("bannerAI"), "err", r.error || "保存失败");
+};
+$("btnJudge").onclick = async () => {
+  $("aiOut").style.display = "block";
+  $("aiOut").textContent = "调用 Jev 判断中（每个目录 3 个问题、5 个一批）…";
+  showBanner($("bannerAI"), "warn", "正在进行 AI 判断…");
+  const r = await api("/api/judge", {top: parseInt($("judgeTop").value || "15", 10), only_unknown: $("judgeUnknown").checked});
+  if (r.ok){
+    $("aiOut").textContent = (r.output || "") + "\n\n判断完成：" + JSON.stringify(r.judged || {});
+    showBanner($("bannerAI"), "ok", "AI 判断完成：清单里已加上 🤖 标记，报告也一并更新了。");
+    TOUCHED = false; await refresh(); await refresh();
+  } else {
+    $("aiOut").textContent = r.output || r.error || "失败";
+    showBanner($("bannerAI"), "err", r.error || "AI 判断失败");
+  }
+};
+
+// ---- 清理
+const paths = () => Array.from(SELECTED);
+$("btnPreview").onclick = async () => {
+  if (!paths().length){ showBanner($("bannerClean"), "err", "没勾选任何项"); return; }
+  $("cleanOut").style.display = "block"; $("cleanOut").textContent = "预览中…";
+  const r = await api("/api/clean", {mode:"preview", paths: paths()});
+  $("cleanOut").textContent = r.output || JSON.stringify(r);
+  showBanner($("bannerClean"), r.ok ? "ok" : "err",
+    r.ok ? `以上是预览（勾选 ${paths().length} 项），什么都没删。` : (r.error || "预览失败"));
+};
+$("btnApply").onclick = async () => {
+  if (!paths().length){ showBanner($("bannerClean"), "err", "没勾选任何项"); return; }
+  const t = $("confirmText").value.trim();
+  if (t !== "确认清理"){ showBanner($("bannerClean"), "err", "请先在输入框里输入：确认清理"); return; }
+  $("cleanOut").style.display = "block"; $("cleanOut").textContent = "执行中…";
+  const r = await api("/api/clean", {mode:"apply", confirm:t, paths: paths()});
+  $("cleanOut").textContent = r.output || JSON.stringify(r);
+  const d = (r.free_after_gb != null && r.free_before_gb != null)
+      ? `可用空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB。` : "";
+  showBanner($("bannerClean"), r.ok ? "ok" : "err",
+    (r.ok ? "清理完成。" : "清理有问题：") + d + (r.ok ? "要真正释放空间，请清空废纸篓。" : ""));
+  TOUCHED = false; refresh();
+};
+$("btnTrash").onclick = async () => {
+  const t = $("trashText").value.trim();
+  if (t !== "清空废纸篓"){ showBanner($("bannerClean"), "err", "请先在输入框里输入：清空废纸篓"); return; }
+  showBanner($("bannerClean"), "warn", "正在清空废纸篓…");
+  const r = await api("/api/trash", {confirm:t});
+  showBanner($("bannerClean"), r.ok ? "ok" : "err",
+    r.ok ? `废纸篓已清空，当前可用 ${r.free_gb} GB。` : (r.error || "清空失败（可能弹了 Finder 授权窗）"));
+  refresh();
+};
+
+// ---- 工具箱
+function showTool(text, ok = true){
+  $("toolOut").style.display = "block"; $("toolOut").textContent = text;
+  showBanner($("bannerTool"), ok ? "ok" : "err", ok ? "完成" : "出错了");
+}
+$("btnWhitelist").onclick = async () => { const r = await api("/api/whitelist", {action:"list"}); showTool(r.output || ""); };
+$("btnWlAdd").onclick = async () => {
+  const p = $("wlPath").value.trim(); if (!p){ showBanner($("bannerTool"), "err", "先填路径"); return; }
+  const r = await api("/api/whitelist", {action:"add", path:p}); showTool(r.output || JSON.stringify(r), r.ok);
+};
+$("btnWlRemove").onclick = async () => {
+  const p = $("wlPath").value.trim(); if (!p){ showBanner($("bannerTool"), "err", "先填路径"); return; }
+  const r = await api("/api/whitelist", {action:"remove", path:p}); showTool(r.output || JSON.stringify(r), r.ok);
+};
+$("btnHistory").onclick = async () => { const r = await api("/api/history"); showTool(r.output || ""); };
+$("btnQuit").onclick = async () => { await api("/api/quit", {}); document.body.innerHTML =
+  "<div class='wrap'><h1>🧹 已关闭</h1><p class='note'>服务已停止。要再打开，双击 ~/Applications 里的「Mac 清理助手」。</p></div>"; };
+
+initAI();
+refresh();
+setInterval(refresh, 2000);
+</script>
+</body>
+</html>

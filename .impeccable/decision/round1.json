@@ -1,0 +1,91 @@
+{
+  "title": "选一个视觉世界",
+  "question": "骰子把「档案抽屉」判给了这次构建。保留它、换一张对手牌，还是重掷？（不管选哪个，扫描/勾选/清理/AI 判断的功能和安全锁都不动）",
+  "options": [
+    {
+      "id": "assigned",
+      "kind": "assigned",
+      "label": "档案抽屉 · 除尘与退役",
+      "kicker": "THE ROLL",
+      "lineage": "图书馆卡片目录与馆藏「退役（deaccession）」流程",
+      "thesis": "清理＝除尘与退役：每条记录都有编号、体量和处置意见，抽屉在你手上有重量。",
+      "palette": ["#120F0C", "#F2E4CC", "#E8A33D", "#7FD1C4", "#D2603A"],
+      "materials": ["灯下尘埃", "上蜡卡纸", "烫金编号"],
+      "viewport": "第一屏就是抽屉本体：左上是磁盘——一条由实时数据重绘的白色脉冲线环；右侧是三格抽屉（可安全清理／需你判断／规则表认不出），每张卡带编号、体量、处置意见与选中状态；底部一条随光标流动的尘埃粒子带。",
+      "risk": "档案世界容易滑向复古怀旧：字体一保守、密度一松垮，就只剩旧纸味，丢掉了精密感。",
+      "raised": [
+        {"from": "challenger-exposure-record", "raise": "负载改用刻度而不是进度条：每项体量以密度刻度表达，两处刻度交叉＝有冲突（风险项），被保护的项用点线轮廓。"},
+        {"from": "challenger-saville", "raise": "目录化纪律：每条记录带编号，磁盘由实时数据重绘的白色脉冲线堆呈现，不是装饰插画。"},
+        {"from": "challenger-boarding-pass", "raise": "状态留在原地发亮：刚变化的行不移走，亮到你确实看见为止。"}
+      ]
+    },
+    {
+      "id": "model-pick",
+      "kind": "pick",
+      "label": "分拣线",
+      "kicker": "IMPECCABLE’S PICK",
+      "lineage": "快递分拣中心的三道分拣道",
+      "thesis": "清理＝把文件投进三条分拣道：回收、待判、不动。",
+      "palette": ["#0E1116", "#F5F7FA", "#FFB020", "#4FD1C5"],
+      "materials": ["传送带纹理", "贴纸分拣单", "计数器翻牌"],
+      "viewport": "第一屏是一条横向分拣线：清单＝线上的一排包裹，勾选＝贴上分拣单，执行＝它们滑进回收道、计数器翻一格；上方是磁盘水位。",
+      "risk": "分拣线是这一类工具最常见的隐喻——熟悉、好懂，也最容易被别的工具抄走。"
+    },
+    {
+      "id": "challenger-exposure-record",
+      "kind": "challenger",
+      "catalogId": "operate-b-exposure-record-zone-sheets",
+      "verdict": "competitive",
+      "label": "暗房曝光记录",
+      "lineage": "暗房放大机下的曝光记录卡",
+      "thesis": "每一项都是被记录的一块区域：密度＝负载，Δ档＝体量，交叉＝冲突。",
+      "palette": ["#0B0C0E", "#E9E5DC", "#C8517F"],
+      "materials": ["背光纸", "描图纸", "十一级灰度尺"],
+      "viewport": "一张背光记录卡：三层半透明纸叠着，区域用不同密度斜线填充，右侧是秒数与滤镜的表列。",
+      "case": "融合度好：清单＝区域、体量＝Δ档、冲突＝交叉斜线；在「第一次看就懂」上略逊于档案抽屉。",
+      "risk": "斜线密度与灰度一旦失控，就读成装饰花纹而不是负载。"
+    },
+    {
+      "id": "challenger-saville",
+      "kind": "challenger",
+      "catalogId": "brand-identity-canon-saville-catalog-sleeve",
+      "verdict": "competitive",
+      "label": "哑黑目录封套",
+      "lineage": "工厂唱片目录的封套语言（Saville 式）",
+      "thesis": "极简到只剩一条白色脉冲线和一个编号。",
+      "palette": ["#0A0A0A", "#FFFFFF", "#FF4D2E", "#2BA0FF"],
+      "materials": ["哑黑卡纸", "白发丝线绘图", "色块编码"],
+      "viewport": "整屏哑黑：中央一条由实时数据绘制的白色脉冲线堆，右上角一个编号，清单是编号＋色块。",
+      "case": "融合度好：目录条目＝清单项，脉冲线＝磁盘；识别度偏低（唱片收藏者的文化）。",
+      "risk": "色块编码没有图例解码，用户会看不懂条目名。"
+    },
+    {
+      "id": "challenger-boarding-pass",
+      "kind": "challenger",
+      "catalogId": "vernacular-ephemera-boarding-pass-and-gate-board",
+      "verdict": "declined",
+      "label": "登机牌与航显板",
+      "lineage": "分段登机牌配实时航显板",
+      "thesis": "条目像航班一样按时间重排，变动的行不移走。",
+      "palette": ["#F4F4F2", "#141414", "#D8341F"],
+      "materials": ["分段卡纸", "等宽数码块", "翻页灯"],
+      "viewport": "上半是分段的登机牌，下半是按时间排序的航显板。",
+      "case": "清单＝航班排序有强制感（磁盘条目没有出发时间）；识别度高但机制是硬凑的。",
+      "kept": "状态留在原地发亮：改变的那一行保留高亮，直到你看见它。",
+      "risk": "把文件当成航班排班，会让「体量」这个真正的排序依据被时间挤掉。"
+    }
+  ],
+  "reroll": {"registers": ["safer", "bolder"]},
+  "buildPath": {"value": "code", "toggle": true},
+  "canon": true,
+  "canonCard": {
+    "kind": "canon",
+    "label": "这一类工具的标准界面",
+    "thesis": "访客预期的那个排列，工艺做足。",
+    "palette": ["#FFFFFF", "#111827", "#2563EB"],
+    "materials": ["干净的网格", "规整的表格"],
+    "viewport": "左侧导航＋顶部磁盘水位＋三列表格，行内复选框与徽章。",
+    "risk": "按设计就该与同类工具难以区分。"
+  },
+  "steer": true
+}
