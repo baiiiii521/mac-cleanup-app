@@ -1,0 +1,21 @@
+fix(ui): 按 v3 完工评审的 8 条 material fixes 一次修完
+
+1) ★ prefers-reduced-motion 下鼓被冻在空帧、仪器在说谎（源码级问题，截图看不见）
+   draw() 只在 !RM 时自转，而 set/spec/consume/eat/pulse/reset 都只改状态不重绘 →
+   RM 时永远停在 occAnim=0/grown=0 的初始帧（空鼓 + 液位 0%），旁边 DOM 却写 66%。
+   现在任何状态变化都补一帧（schedule()），自转仍只在 !RM 时跑。已补一张 RM 模式下的鼓截图。
+2) ≤1180 抽屉标签竖排成一字一行：.drawer-tab 加 flex-wrap，.tier 设 flex:none + nowrap，
+   meta 里的「刻度线＝100 MB / 已选 N 项」包成 .nowrap 单元。实测 390 宽下 tier 为单行。
+3) 390 宽第一屏没有任何可操作控件（实测主按钮在 CSS y≈1025px）：
+   操作条从工作区提出来独立成 .actbar，桌面用 grid-template-areas 放在鼓右侧、
+   ≤1180 时排到最前并 sticky。实测 390 宽下主按钮 y=262。
+4) 卡内确认面板在 <label> 里，点它会改掉勾选：给 .rowconfirm 拦下 click（preventDefault + stopPropagation）。
+   实测点面板文字前后勾选数 8 → 8。
+5) 批量闸门默认聚焦破坏性按钮且无焦点陷阱：初始焦点给「取消」，加 Tab 环闭合，关闭后回焦到触发按钮。
+6) 全局 Enter/Space 会静默擦掉「已退役」章（键盘用户的状态反馈丢失）：改为点别处才消，
+   且不抢 .rowconfirm/按钮/输入框/卡片上的操作；Esc 仍可显式清。
+7) 删掉勾选卡左侧 2px 彩色竖条（craft floor 明令禁止项；选中已由底色+描边+位移+投影四重表达）。
+8) 鼓上口切点附近飞出的刻度碎屑：刻度改为只画前半周（切点两端留空）。
+
+验收：detector 0 条；--selftest 10/10；证据图 desktop.png(1440) / mobile.png(390) /
+drum-closeup.png(液位钉 66%) / drum-reduced-motion.png（RM 下鼓有液面有卡片有读数）

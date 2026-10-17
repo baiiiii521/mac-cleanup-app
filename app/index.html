@@ -58,11 +58,13 @@ h1{margin:0;font-size:36px;font-weight:600;letter-spacing:-.035em;line-height:1.
 .safe-line svg{flex:none}
 
 /* ---------- 舞台 ---------- */
-.stage{display:grid;grid-template-columns:452px minmax(0,1fr);gap:34px;margin-top:28px;align-items:start}
-@media (max-width:1180px){.stage{grid-template-columns:1fr;gap:26px}}
+.stage{display:grid;grid-template-columns:452px minmax(0,1fr);grid-template-areas:"inst actbar" "inst work";gap:26px 34px;margin-top:28px;align-items:start}
+.actbar{grid-area:actbar;min-width:0}
+.stage > section.work{grid-area:work;min-width:0}
+@media (max-width:1180px){.stage{grid-template-columns:1fr;grid-template-areas:"actbar" "inst" "work";gap:20px}}
 
 /* ---------- 档案鼓（真 3D 投影，软件渲染） ---------- */
-.instrument{position:relative}
+.instrument{position:relative;grid-area:inst}
 .drum-wrap{position:relative;width:100%;max-width:452px;aspect-ratio:1/1;margin:0 auto}
 #drum{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
 #drum:active{cursor:grabbing}
@@ -118,14 +120,15 @@ input[type=text]:focus,input[type=password]:focus{border-color:rgba(240,169,59,.
 .vocab .v svg{flex:none}
 .vocab b{color:var(--paper-dim);font-weight:600}
 .drawer{position:relative;transform-style:preserve-3d}
-.drawer-tab{position:relative;display:inline-flex;align-items:baseline;gap:12px;padding:7px 18px 8px;
+.drawer-tab{position:relative;display:inline-flex;align-items:baseline;gap:12px;padding:7px 18px 8px;flex-wrap:wrap;max-width:100%;
   border:1px solid var(--line-2);border-bottom:none;border-radius:4px 12px 0 0;
   background:linear-gradient(180deg,var(--ink-700),var(--ink-800));
   box-shadow:0 -1px 0 rgba(244,231,207,.05) inset,0 -10px 20px -18px #000}
 .drawer-tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink-800)}
-.tier{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:600;letter-spacing:-.012em}
+.tier{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:600;letter-spacing:-.012em;flex:none;white-space:nowrap}
 .tier svg{flex:none}
-.drawer-meta{font-family:var(--mono);font-size:12px;color:var(--paper-faint);letter-spacing:.03em}
+.drawer-meta{font-family:var(--mono);font-size:12px;color:var(--paper-faint);letter-spacing:.03em;flex:0 1 auto;min-width:0}
+.nowrap{white-space:nowrap}
 .drawer-body{margin-top:0;display:grid;gap:9px;max-height:var(--cap,2600px);overflow-y:auto;padding:12px 4px 4px 1px;
   border-top:1px solid var(--line-2);transition:max-height .46s cubic-bezier(.16,.84,.24,1)}
 .drawer-body[data-scroll="1"]{--cap:398px}
@@ -148,8 +151,6 @@ button.expand{margin-top:10px;align-self:flex-start}
   background:linear-gradient(178deg,#262019,#171410 62%,#14110D);box-shadow:var(--shadow-card)}
 .card.on{transform:translateX(13px) rotateY(-1.1deg);border-color:rgba(240,169,59,.46);
   background:linear-gradient(178deg,#312516,#1E180F 64%,#191309);box-shadow:var(--shadow-lift)}
-.card.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px 0 0 2px;
-  background:linear-gradient(180deg,var(--lamp-hi),rgba(240,169,59,.15))}
 .card.fixed{background:linear-gradient(178deg,#171410,#12100C 70%)}
 .card.releasing{transform:translate(13px,-26px) rotateY(-6deg) scale(1.015);border-color:rgba(255,203,115,.7);
   box-shadow:0 44px 76px -32px rgba(0,0,0,.98);z-index:5}
@@ -287,6 +288,8 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
 /* ---------- 响应 ---------- */
 @media (max-width:1180px){
   .shell{padding:26px 24px 56px}
+  .actbar{position:sticky;top:0;z-index:30;padding:10px 0 12px;
+    background:linear-gradient(180deg,rgba(11,9,6,.97),rgba(11,9,6,.78) 68%,rgba(11,9,6,0))}
   h1{font-size:29px}
   .drum-wrap{max-width:392px}
   .free{font-size:48px}
@@ -367,7 +370,7 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
     </section>
 
     <!-- 工作区 -->
-    <section aria-label="清单与操作">
+    <div class="actbar">
       <div class="rail">
         <button class="primary" id="btnScan">开始体检</button>
         <button id="btnCleanSel" disabled>清理选中的 0 项</button>
@@ -388,6 +391,9 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
         <span class="count" id="selCount">已选 <b>0</b> / 0 项 · 0 KB</span>
       </div>
 
+    </div>
+
+    <section class="work" aria-label="清单与操作">
       <div class="vocab" id="vocab" hidden>
         <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="#F0A93B" stroke-width="1.6" stroke-linecap="round"/></svg><b>可安全清理</b> 纯缓存、可再生</span>
         <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M6 1.2l5 8.4H1z" stroke="#C4755C" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.4v2.4" stroke="#C4755C" stroke-width="1.2" stroke-linecap="round"/></svg><b>需你判断</b> 含你的数据，按提示处理</span>
@@ -545,7 +551,7 @@ const drum = (function(){
   const S = 904, C = S/2;
   const R = 244, HH = 224, F = 1430;
   let rotY = 0.5, rotX = 0.40, spin = 0, auto = 1, dragging = false;
-  let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0;
+  let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0, started = false;
   let SPEC = [], CONSUMED = new Set(), EXTRA = new Map();
 
   function project(p){
@@ -671,10 +677,13 @@ const drum = (function(){
     poly([s1,s2]); x.stroke(); poly([s3,s4]); x.stroke();
 
     // 7) 上口刻度 + 未占用那样一圈青弧
-    for (let i=0;i<=40;i++){
-      const a = i/40*6.2832, r1 = R + 2, r2 = R + (i%10===0 ? 20 : 11);
-      x.strokeStyle = i%10===0 ? "rgba(246,234,212,.38)" : "rgba(246,234,212,.16)";
-      x.lineWidth = i%10===0 ? 1.9 : 1;
+    // 刻度只画前半周（视线能看到的这一侧），切点两端留空 —— 画整周会有碎片飞出鼓身轮廓
+    for (let i=1;i<20;i++){
+      const a = aL + (aR-aL)*(i/20);
+      const major = i % 5 === 0;
+      const r1 = R + 2, r2 = R + (major ? 17 : 9);
+      x.strokeStyle = major ? "rgba(246,234,212,.38)" : "rgba(246,234,212,.16)";
+      x.lineWidth = major ? 1.9 : 1;
       poly([pt(a,yTop,r1), pt(a,yTop,r2)]); x.stroke();
     }
 
@@ -732,6 +741,7 @@ const drum = (function(){
     flash *= Math.exp(-4.2*dt); shock *= Math.exp(-2.6*dt);
     if (!RM) requestAnimationFrame(draw);
   }
+  started = true;
   draw();
 
   let downX=0, downRot=0, downY=0, downRotX=0;
@@ -760,10 +770,13 @@ const drum = (function(){
       frame(){ draw(); }
     };
   }
+  // RM（减弱动态效果）时没有自转循环，所以每次状态变化都要自己补一帧重画，
+  // 否则这只仪器会停在初始空帧上撒谎（空鼓 + 液位 0%，旁边文字却写 66%）。
+  function schedule(){ if (RM && started) draw(); }
   return {
-    set(pct){ occTarget = Math.max(0, Math.min(1, pct/100)); },
-    spec(list){ SPEC = list; },
-    consume(paths){ paths.forEach(p => CONSUMED.add(p)); },
+    set(pct){ occTarget = Math.max(0, Math.min(1, pct/100)); schedule(); },
+    spec(list){ SPEC = list; schedule(); },
+    consume(paths){ paths.forEach(p => CONSUMED.add(p)); schedule(); },
     eat(paths){
       const v = [], mKB = maxKB();
       ITEMS.filter(i => paths.includes(i.path)).slice(0, 40).forEach(it => {
@@ -775,10 +788,11 @@ const drum = (function(){
           v.push({ a, y:(Math.random()-.5)*h, r:1.4 + Math.random()*2.2, life:1, delay:Math.random()*.2 });
       });
       EXTRA.set("vortex", v);
+      schedule();
       return v;
     },
-    pulse(){ flash = 1; shock = 1; },
-    reset(){ CONSUMED = new Set(); EXTRA.set("vortex", []); grown = 0; }
+    pulse(){ flash = 1; shock = 1; schedule(); },
+    reset(){ CONSUMED = new Set(); EXTRA.set("vortex", []); grown = 0; schedule(); }
   };
 })();
 
@@ -863,7 +877,7 @@ function renderDrawers(items){
     return `<div class="drawer">
       <div class="drawer-tab">
         <span class="tier">${mark(tier,13)}${t.name}</span>
-        <span class="drawer-meta">${list.length} 项 · ${kb(total)} · 刻度线＝100 MB${selList.length ? ` · 已选 ${selList.length} 项 ${kb(selKB)}` : ""}</span>
+        <span class="drawer-meta">${list.length} 项 · ${kb(total)} · <span class="nowrap">刻度线＝100 MB</span>${selList.length ? ` · <span class="nowrap">已选 ${selList.length} 项 ${kb(selKB)}</span>` : ""}</span>
         <span class="drawer-hint">${hint} · ${t.hint}</span>
       </div>
       <div class="drawer-body" data-scroll="${list.length > 9 ? 1 : 0}">
@@ -901,6 +915,9 @@ function wireRows(){
       rc.hidden = !rc.hidden;
       if (!rc.hidden) rc.querySelector("[data-yes]").focus();
     });
+  });
+  wrap.querySelectorAll(".rowconfirm").forEach(rc => {
+    rc.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); });
   });
   wrap.querySelectorAll("[data-no]").forEach(b => {
     b.addEventListener("click", e => { e.preventDefault(); b.closest(".rowconfirm").hidden = true; });
@@ -1075,9 +1092,23 @@ function openSheet(){
     `<li><span>${esc(i.name || shortP(i.path).split("/").pop())}</span><span>${esc(i.size)}</span></li>`).join("")
     + (items.length > 6 ? `<li><span>还有 ${items.length-6} 项…</span><span></span></li>` : "");
   $("sheet").hidden = false;
-  $("sheetGo").focus();
+  sheetOpener = document.activeElement;
+  $("sheetNo").focus();                 // 默认焦点不放在破坏性按钮上
 }
-const closeSheet = () => { $("sheet").hidden = true; };
+let sheetOpener = null;
+$("sheet").addEventListener("keydown", e => {
+  if (e.key !== "Tab") return;
+  const f = [...$("sheet").querySelectorAll("button, input, [tabindex]:not([tabindex='-1'])")]
+              .filter(el => !el.disabled && el.offsetParent !== null);
+  if (!f.length) return;
+  const first = f[0], last = f[f.length - 1];
+  if (e.shiftKey && document.activeElement === first){ e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last){ e.preventDefault(); first.focus(); }
+});
+const closeSheet = () => {
+  $("sheet").hidden = true;
+  if (sheetOpener && sheetOpener.focus) sheetOpener.focus();
+};
 
 /* ---------- 交互 ---------- */
 $("btnScan").onclick = async () => {
@@ -1169,11 +1200,22 @@ $("btnQuit").onclick = async () => {
     `<div style="padding:60px 0"><h1 style="margin:0 0 8px">服务已关闭</h1>
      <p style="color:var(--paper-dim);margin:0">要再打开，双击 ~/Applications 里的「Mac 清理助手」。</p></div>`;
 };
+function clearSeen(){
+  SEEN.clear();
+  document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
+}
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape"){ closeSheet(); document.querySelectorAll(".rowconfirm").forEach(r => r.hidden = true); }
-  if (SEEN.size && (e.key === "Enter" || e.key === " ")){
-    SEEN.clear(); document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
+  if (e.key === "Escape"){
+    closeSheet();
+    document.querySelectorAll(".rowconfirm").forEach(r => r.hidden = true);
+    clearSeen();
   }
+});
+// 退役章亮到"你确实看见为止"：点一下别处就消，但不抢正在操作的控件
+document.addEventListener("pointerdown", e => {
+  if (!SEEN.size) return;
+  if (e.target.closest(".rowconfirm, .act, button, input, label, summary, .card")) return;
+  clearSeen();
 });
 
 /* ---------- 启动 ---------- */
