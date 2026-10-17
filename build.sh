@@ -52,6 +52,15 @@ if [ "${1:-}" != "--no-sign" ] && command -v codesign >/dev/null 2>&1; then
   codesign --force --deep --sign - "$DEST" >/dev/null 2>&1 && echo "  ✓ ad-hoc 签名完成" || echo "  ⚠️ 签名失败（不影响本机使用）"
 fi
 
+# 去掉可能带上的隔离属性（否则 Finder 双击会被 Gatekeeper 拦）
+xattr -dr com.apple.quarantine "$DEST" 2>/dev/null || true
+
+# 向 LaunchServices 重新注册：每次重建后必须刷新，否则 Finder/启动台点的是过期记录（表现为"点了没反应"）
+LSREG="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+if [ -x "$LSREG" ]; then
+  "$LSREG" -f -R "$DEST" >/dev/null 2>&1 && echo "  ✓ 已向 LaunchServices 重新注册"
+fi
+
 # 刷新 Launchpad/Spotlight 索引
 touch "$DEST"
 echo "✅ 安装完成：$DEST"

@@ -24,6 +24,10 @@
 	<string>11.0</string>
 	<key>NSHighResolutionCapable</key>
 	<true/>
+	<!-- 本应用没有窗口（界面在浏览器里）：设为后台应用，不占 Dock、不参与「激活」，
+	     否则点击图标时 macOS 只会去激活一个没有窗口的进程 → 用户看到「点了没反应」。 -->
+	<key>LSUIElement</key>
+	<true/>
 	<key>NSHumanReadableCopyright</key>
 	<string>清理规则来自 macos-deep-optimize 技能（MIT）</string>
 </dict>

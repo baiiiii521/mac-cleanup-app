@@ -517,6 +517,25 @@ def free_port() -> int:
     return port
 
 
+def open_browser(url: str) -> bool:
+    """尽力打开浏览器；都失败就留痕（launcher 会负责弹窗提示）。"""
+    try:
+        if webbrowser.open(url):
+            log("browser opened via webbrowser: %s" % url)
+            return True
+    except Exception as exc:                                          # noqa: BLE001
+        log("webbrowser.open failed: %s" % exc)
+    for cmd in (["open", url], ["open", "-a", "Safari", url]):
+        try:
+            if subprocess.run(cmd, capture_output=True, timeout=20).returncode == 0:
+                log("browser opened via %s" % " ".join(cmd[:2]))
+                return True
+        except Exception as exc:                                      # noqa: BLE001
+            log("open failed (%s): %s" % (cmd[0], exc))
+    log("could NOT open browser; UI is at %s" % url)
+    return False
+
+
 def main() -> None:
     os.makedirs(STATE_DIR, exist_ok=True)
     port = int(os.environ.get("MAC_CLEAN_PORT") or 0) or free_port()
@@ -534,7 +553,12 @@ def main() -> None:
     log("serving on %s (skill=%s python=%s)" % (url, SKILL_DIR, sys.executable))
     print(url, flush=True)
     if "--open" in sys.argv or os.environ.get("MAC_CLEAN_OPEN", "1") == "1":
-        threading.Timer(0.6, lambda: webbrowser.open(url)).start()
+        def _later() -> None:
+            if not open_browser(url):
+                subprocess.run(["osascript", "-e",
+                                'display dialog "Mac 清理助手已启动，但没能自动打开浏览器。\\n请手动打开：%s" '
+                                'buttons {"好"} default button 1' % url], capture_output=True)
+        threading.Timer(0.6, _later).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
