@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mac 清理助手 · 档案抽屉</title>
+<style>
+/* ============================================================
+   档案抽屉 · 除尘与退役
+   世界只借四样：字体分级、调色、密度、一个签名动作。
+   布局、导航、控件仍是本平台的标准件。
+   ============================================================ */
+:root{
+  --ink-900:#100D0A; --ink-850:#15110D; --ink-800:#191512; --ink-750:#1F1A15; --ink-700:#261F19;
+  --line:rgba(244,231,207,.10); --line-2:rgba(244,231,207,.18);
+  --paper:#F4E7CF; --paper-dim:#D2C1A5; --paper-faint:#B3A288;
+  --lamp:#E8A33D; --clay:#C4755C; --cyan:#7FD1C4; --verm:#E0552C;
+  --radius:3px;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",system-ui,sans-serif;
+  --shadow-lift:0 22px 44px -20px rgba(0,0,0,.95), 0 3px 10px -4px rgba(0,0,0,.8);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--ink-900);color:var(--paper);font:14px/1.65 var(--sans);
+  -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:hidden}
+/* 台灯：暗房间里唯一的光源 */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(1100px 620px at 12% -6%, rgba(232,163,61,.13), transparent 62%),
+             radial-gradient(900px 700px at 108% 8%, rgba(196,117,92,.07), transparent 60%),
+             linear-gradient(180deg,#13100C 0%,#100D0A 42%,#0C0A08 100%)}
+body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E")}
+#dust{position:fixed;inset:0;z-index:1;pointer-events:none}
+.shell{position:relative;z-index:2;max-width:1460px;margin:0 auto;padding:34px 52px 64px}
+
+/* ---------- 报头 ---------- */
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;flex-wrap:wrap;
+  padding-bottom:18px;border-bottom:1px solid var(--line)}
+.mark{display:flex;align-items:center;gap:14px}
+.mark svg{flex:none}
+h1{margin:0;font-size:31px;font-weight:600;letter-spacing:-.028em;line-height:1.1}
+.how{margin:7px 0 0;color:var(--paper-dim);font-size:13.5px;max-width:74ch;text-wrap:pretty}
+.how b{color:var(--paper);font-weight:600}
+.safe-line{display:flex;align-items:center;gap:8px;margin:0;max-width:46ch;font-size:12px;color:var(--paper-faint);line-height:1.6;text-wrap:pretty}
+.safe-line svg{flex:none}
+.lock{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.02em;color:var(--paper-faint)}
+.lock svg{flex:none}
+
+/* ---------- 舞台 ---------- */
+.stage{display:grid;grid-template-columns:390px minmax(0,1fr);gap:30px;margin-top:26px;align-items:start}
+@media (max-width:1080px){.stage{grid-template-columns:1fr}}
+
+/* ---------- 磁盘测具 ---------- */
+.instrument{position:relative}
+.dial .face{position:relative;width:100%;max-width:390px;aspect-ratio:1/1;margin:0 auto}
+#ring{width:100%;height:100%;display:block}
+.dial-read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
+.free{font:600 40px/1 var(--mono);letter-spacing:-.03em}
+.free small{font:400 13px/1 var(--sans);letter-spacing:.04em;color:var(--paper-dim);display:block;margin-top:9px}
+.dial-cap{margin:12px 0 0;font-size:12px;color:var(--paper-faint);line-height:1.6;max-width:46ch;text-wrap:pretty}
+.dial-legend{display:flex;justify-content:center;gap:16px;margin-top:4px;flex-wrap:wrap}
+.dial-legend span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--paper-faint);letter-spacing:.05em}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.facts{margin:20px 0 0;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:0}
+.fact{display:flex;justify-content:space-between;gap:16px;font-size:12.5px;padding:7px 0;border-top:1px solid rgba(244,231,207,.07)}
+.fact:first-child{border-top:none;padding-top:0}
+.fact dt{color:var(--paper-faint);letter-spacing:.04em}
+.fact dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--paper-dim)}
+.stamp{margin-top:16px;font-family:var(--mono);font-size:11.5px;color:var(--paper-faint);letter-spacing:.04em}
+
+/* ---------- 控件 ---------- */
+button{font:inherit;color:var(--paper);background:linear-gradient(180deg,var(--ink-700),var(--ink-800));
+  border:1px solid var(--line-2);border-radius:var(--radius);padding:9px 15px;cursor:pointer;
+  box-shadow:0 1px 0 rgba(244,231,207,.05) inset,0 6px 14px -12px #000;
+  transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s,background .18s,color .18s}
+button:hover:not(:disabled){border-color:rgba(232,163,61,.45);transform:translateY(-1px)}
+button:active:not(:disabled){transform:translateY(0) scale(.985)}
+button:disabled{opacity:.42;cursor:not-allowed}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+button.primary{background:linear-gradient(180deg,#F0B255,#D8912C);border-color:#C98420;color:#241703;font-weight:600}
+button.primary:hover:not(:disabled){border-color:#FFC978}
+button.danger{color:#FFC8B6;border-color:rgba(224,85,44,.42)}
+button.danger:hover:not(:disabled){border-color:var(--verm);background:linear-gradient(180deg,#2A1510,#20100C)}
+button.mini{padding:5px 11px;font-size:12.5px;border-radius:2px}
+button.ghost{background:none;box-shadow:none;border-color:var(--line)}
+button.ghost:hover:not(:disabled){background:rgba(244,231,207,.04)}
+input[type=text],input[type=password]{font:inherit;font-family:var(--mono);font-size:13px;color:var(--paper);
+  background:rgba(0,0,0,.42);border:1px solid var(--line-2);border-radius:var(--radius);padding:9px 12px;min-width:0}
+input::placeholder{color:var(--paper-faint)}
+input[type=text]:focus,input[type=password]:focus{border-color:rgba(232,163,61,.5);background:rgba(0,0,0,.55)}
+input{caret-color:var(--lamp)}
+.gate-tip{font-size:12.5px;color:var(--paper-faint);white-space:nowrap}
+.gate-tip b{color:var(--paper-dim);font-weight:600}
+::selection{background:rgba(232,163,61,.3);color:#FFF6E4}
+.rail{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.rail + .rail{margin-top:12px}
+.rail.util button{font-size:12.5px;padding:7px 12px;color:var(--paper-dim)}
+.rail.util{margin-top:10px}
+.count{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);white-space:nowrap}
+.count b{color:var(--lamp);font-weight:600}
+
+/* ---------- 抽屉 ---------- */
+.vocab{margin:16px 0 0;display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--paper-faint)}
+.vocab .v{display:flex;align-items:center;gap:7px;white-space:nowrap}
+.vocab .v svg{flex:none}
+.vocab b{color:var(--paper-dim);font-weight:600}
+.drawers{margin-top:20px;display:grid;gap:22px}
+.drawer{border-top:1px solid var(--line-2);padding-top:14px}
+.drawer-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.tier{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.tier svg{flex:none}
+.drawer-meta{font-family:var(--mono);font-size:12px;color:var(--paper-faint);letter-spacing:.03em}
+.drawer-hint{flex:1 1 260px;font-size:12px;color:var(--paper-faint);text-align:right}
+.drawer-body{margin-top:11px;display:grid;gap:7px;max-height:var(--cap,2000px);overflow-y:auto;padding-right:3px;
+  transition:max-height .42s cubic-bezier(.16,.84,.24,1)}
+.drawer-body[data-scroll="1"]{--cap:376px}
+.drawer-body.full{--cap:6000px}
+button.expand{margin-top:9px;align-self:flex-start}
+.drawer-body::-webkit-scrollbar{width:9px}
+.drawer-body::-webkit-scrollbar-track{background:rgba(0,0,0,.3);border-radius:5px}
+.drawer-body::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+.drawer-body::-webkit-scrollbar-thumb:hover{background:rgba(232,163,61,.4);background-clip:content-box}
+
+/* ---------- 目录卡 ---------- */
+.card{position:relative;display:grid;grid-template-columns:20px 46px minmax(0,1fr) auto;gap:6px 11px;
+  align-items:center;padding:11px 14px 12px;border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(180deg,var(--ink-750),var(--ink-800));
+  transition:transform .26s cubic-bezier(.16,.84,.24,1),border-color .2s,background .2s,box-shadow .26s}
+.card.pick{cursor:pointer}
+.card.pick:hover{border-color:var(--line-2);transform:translateX(3px)}
+.card.on{transform:translate(7px,-1px);border-color:rgba(232,163,61,.42);
+  background:linear-gradient(180deg,#2A2114,#1D1710);box-shadow:var(--shadow-lift)}
+.card.fixed{background:linear-gradient(180deg,#181410,#141110)}
+.card.seen{background:linear-gradient(180deg,#2A2013,#1C1610);border-color:rgba(232,163,61,.3)}
+.card.seen::after{content:"已退役";position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-7deg);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--lamp);opacity:.5;
+  border:1px solid rgba(232,163,61,.45);border-radius:2px;padding:1px 6px;pointer-events:none}
+.pick-box{appearance:none;-webkit-appearance:none;width:17px;height:17px;margin:0;border:1px solid var(--line-2);
+  border-radius:2px;background:rgba(0,0,0,.45);cursor:pointer;position:relative;transition:border-color .16s,background .16s}
+.pick-box:hover{border-color:rgba(232,163,61,.6)}
+.pick-box:checked{background:var(--lamp);border-color:#F3B95F}
+.pick-box:checked::after{content:"";position:absolute;left:5px;top:1.5px;width:4px;height:9px;
+  border:solid #2A1A05;border-width:0 2px 2px 0;transform:rotate(42deg)}
+.pick-box:disabled{cursor:default;opacity:.42}
+.card.seen .pick-box:checked{animation:settle .5s cubic-bezier(.16,.84,.24,1)}
+@keyframes settle{0%{transform:scale(1.5)}60%{transform:scale(.94)}100%{transform:scale(1)}}
+.no{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--paper-faint)}
+.card.on .no{color:var(--lamp)}
+.nm{min-width:0;font-size:14.5px;font-weight:600;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-flex;align-items:center;gap:5px;margin-left:9px;font-family:var(--mono);font-size:12px;
+  letter-spacing:.05em;color:var(--paper-faint);vertical-align:1px;font-weight:400}
+.tag svg{flex:none}
+.sz{font-family:var(--mono);font-size:13px;color:var(--paper-dim);white-space:nowrap;text-align:right}
+.card.on .sz{color:var(--paper)}
+.under{grid-column:2/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center}
+.ruler{position:relative;height:9px;border-radius:1px;background:rgba(0,0,0,.42);border:1px solid var(--line);overflow:hidden}
+.ruler i{position:absolute;inset:0 auto 0 0;border-radius:1px}
+.ruler i::after{content:"";position:absolute;inset:0;opacity:.85;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M0 6L6 0' stroke='%23000' stroke-opacity='.45' stroke-width='1.4'/%3E%3C/svg%3E")}
+.ruler .lead{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(244,231,207,.32)}
+.verdict{font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);white-space:nowrap;letter-spacing:.02em}
+.verdict.neg{color:var(--clay)}
+.verdict.mute{color:var(--paper-faint)}
+.path{grid-column:1/-1;font-family:var(--mono);font-size:12.5px;color:#B8A78C;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.note{grid-column:1/-1;font-size:12.5px;color:var(--paper-dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card.fixed .nm{color:var(--paper-dim)}
+.empty{padding:24px 2px;color:var(--paper-dim);font-size:13.5px;border-top:1px solid var(--line)}
+.steps{display:grid;gap:10px;margin-top:14px}
+.step{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:baseline;font-size:13.5px;color:var(--paper-dim)}
+.step b{color:var(--paper);font-weight:600}
+.step .k{font-family:var(--mono);font-size:11.5px;color:var(--lamp)}
+
+/* ---------- 执行台 ---------- */
+.lock-gate{margin-top:26px;border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(180deg,rgba(38,31,25,.72),rgba(25,21,18,.72));padding:18px 18px 16px}
+.lock-gate h2{margin:0 0 3px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.lock-gate p.sub{margin:0 0 14px;font-size:12.5px;color:var(--paper-faint)}
+.gate-lines{display:grid;gap:12px}
+.gate-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.release{font-family:var(--mono);font-size:13px;color:var(--paper-dim)}
+.release b{color:var(--lamp);font-weight:600}
+.notice{margin:14px 0 0;padding:11px 13px;border-radius:var(--radius);font-size:13px;white-space:pre-wrap;
+  border:1px solid var(--line-2);background:rgba(0,0,0,.34);color:var(--paper-dim)}
+.notice.ok{border-color:rgba(244,231,207,.30);color:#E6D8BE}
+.notice.err{border-color:rgba(224,85,44,.44);color:#F3BCA9}
+.notice.warn{border-color:rgba(232,163,61,.44);color:#F0D19A}
+.notice[hidden]{display:none}
+pre.out{margin:14px 0 0;padding:13px 15px;border:1px solid var(--line);border-radius:var(--radius);
+  background:rgba(0,0,0,.42);max-height:290px;overflow:auto;font:12px/1.6 var(--mono);color:var(--paper-dim);
+  white-space:pre-wrap;word-break:break-word}
+pre.out[hidden]{display:none}
+pre.out::-webkit-scrollbar{width:9px}
+pre.out::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px}
+
+/* ---------- AI / 工具 ---------- */
+details.panel{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}
+details.panel > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
+  font-size:14px;font-weight:600;color:var(--paper)}
+details.panel > summary::-webkit-details-marker{display:none}
+details.panel > summary svg{flex:none;transition:transform .2s}
+details.panel[open] > summary svg{transform:rotate(90deg)}
+.panel-body{margin-top:13px;display:grid;gap:12px}
+.privacy{font-size:12.5px;color:var(--paper-faint);max-width:76ch;line-height:1.62;margin:0}
+.privacy b{color:var(--paper-dim);font-weight:600}
+label.inline{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--paper-dim)}
+
+/* ---------- 登记簿 ---------- */
+.register{margin-top:26px;border-top:1px solid var(--line-2);padding-top:12px}
+.register h2{margin:0 0 10px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;color:var(--paper-faint)}
+.log{max-height:170px;overflow-y:auto;font-family:var(--mono);font-size:12px;line-height:1.72;color:var(--paper-dim)}
+.log div{display:grid;grid-template-columns:78px 1fr;gap:12px;border-top:1px solid rgba(244,231,207,.055);padding:3px 0}
+.log div:first-child{border-top:none}
+.log time{color:var(--paper-faint)}
+.log .e{color:#F3BCA9}.log .g{color:#E6D8BE}.log .w{color:#F0D19A}
+.log::-webkit-scrollbar{width:9px}
+.log::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px}
+
+footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--paper-faint);letter-spacing:.03em}
+footer code{font-family:var(--mono);color:var(--paper-dim)}
+
+@media (max-width:1080px){
+  .shell{padding:24px 20px 52px}
+  .nm,.note{white-space:normal;overflow:visible;text-overflow:clip}
+  .path{white-space:normal;word-break:break-all}
+  h1{font-size:26px}
+  .drawer-hint{text-align:left;flex:1 1 100%}
+}
+@media (max-width:560px){
+  .stage{gap:22px}
+  .nm{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4}
+  .note{white-space:normal;overflow:visible;text-overflow:clip}
+  .path{white-space:normal;word-break:break-all}
+  button{min-height:42px;padding:11px 14px;font-size:13.5px}
+  button.mini{min-height:38px;padding:9px 12px}
+  input[type=text],input[type=password]{min-height:42px;width:100% !important}
+  pre.out{max-height:46vh}
+  .gate-line{gap:8px}
+  .card{grid-template-columns:20px 40px minmax(0,1fr);padding:10px 11px}
+  .sz{grid-column:3;text-align:left}
+  .free{font:600 32px/1 var(--mono)}
+  .rail{gap:7px}
+  button{padding:9px 12px;font-size:13px}
+  .count{margin-left:0;width:100%}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important;transition-duration:.001ms !important}
+  #dust{display:none}
+}
+</style>
+</head>
+<body>
+<canvas id="dust" aria-hidden="true"></canvas>
+
+<div class="shell">
+  <header class="masthead">
+    <div class="mark">
+      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" aria-hidden="true">
+        <rect x="4.5" y="7.5" width="29" height="23" rx="2.5" stroke="#E8A33D" stroke-width="1.2"/>
+        <path d="M4.5 13.5h29" stroke="rgba(232,163,61,.5)" stroke-width="1.2"/>
+        <path d="M9 18.5h7M9 22.5h12M9 26.5h5" stroke="rgba(244,231,207,.5)" stroke-width="1.2" stroke-linecap="round"/>
+        <rect x="24" y="17.5" width="6.5" height="9" rx="1" stroke="#F4E7CF" stroke-width="1.1"/>
+      </svg>
+      <div>
+        <h1>Mac 清理助手</h1>
+        <p class="how">先做一次<b>只读</b>体检，结果分三格抽屉；逐项勾选 → <b>先预览</b> → 确认了才动手。删除一律进废纸篓，可反悔。</p>
+      </div>
+    </div>
+    <p class="safe-line"><svg width="13" height="14" viewBox="0 0 12 13" fill="none" aria-hidden="true"><path d="M6 1.5l4 2v3c0 2.4-1.7 4.2-4 5-2.3-.8-4-2.6-4-5v-3z" stroke="#B3A288"/></svg>
+      只读扫描 · 默认只预览 · 勾选只做交集：你的选择只能把范围收窄，系统不会替你扩大</p>
+  </header>
+
+  <div class="stage">
+    <section class="instrument" aria-label="磁盘">
+      <div class="dial">
+        <div class="face">
+          <canvas id="ring" width="780" height="780"></canvas>
+          <div class="dial-read">
+            <div class="free" id="freeNum">—<small>GB 可用</small></div>
+          </div>
+        </div>
+      </div>
+      <div class="dial-legend">
+        <span><i class="dot" style="background:#E8A33D"></i>可安全清理</span>
+        <span><i class="dot" style="background:#C4755C"></i>需你判断</span>
+        <span><i class="dot" style="background:#7FD1C4"></i>系统管控</span>
+      </div>
+      <p class="dial-cap">外圈＝磁盘占用（已用 <span id="capPct">—</span>） · 内圈每一根＝清单里的一项，长度是它的体量（对数刻度）；亮起来的就是你勾选的</p>
+      <dl class="facts">
+        <div class="fact"><dt>已用 / 总容量</dt><dd id="factUsed">—</dd></div>
+        <div class="fact"><dt>占用率</dt><dd id="factPct">—</dd></div>
+        <div class="fact"><dt>清理候选</dt><dd id="factCand">—</dd></div>
+        <div class="fact"><dt>分区</dt><dd id="factMount">—</dd></div>
+      </dl>
+      <div class="stamp" id="stamp">还没有体检记录</div>
+    </section>
+
+    <section aria-label="清单与操作">
+      <div class="rail">
+        <button class="primary" id="btnScan">开始体检</button>
+        <button id="btnReport" disabled>打开完整报告</button>
+        <button class="ghost" id="btnWeb">在浏览器打开</button>
+        <button class="ghost" id="btnWl">保护名单</button>
+        <button class="ghost" id="btnHist">操作历史</button>
+      </div>
+      <div class="rail">
+        <button class="mini" id="btnAll">全选</button>
+        <button class="mini" id="btnNone">全不选</button>
+        <button class="mini" id="btnBig">只选 ≥100 MB</button>
+        <button class="mini" id="btnCache">只选缓存类</button>
+        <button class="mini" id="btnInvert">反选</button>
+        <span class="count" id="selCount">已选 <b>0</b> / 0 项 · 0 KB</span>
+      </div>
+
+      <div class="vocab" id="vocab" hidden>
+        <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="#E8A33D" stroke-width="1.6" stroke-linecap="round"/></svg><b>可安全清理</b> 纯缓存、可再生</span>
+        <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M6 1.2l5 8.4H1z" stroke="#C4755C" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.4v2.4" stroke="#C4755C" stroke-width="1.2" stroke-linecap="round"/></svg><b>需你判断</b> 含你的数据，按提示处理</span>
+        <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><circle cx="6" cy="5.5" r="4.3" stroke="#7FD1C4" stroke-width="1.3"/><path d="M6 3.4v2.6M6 7.9v.2" stroke="#7FD1C4" stroke-width="1.3" stroke-linecap="round"/></svg><b>系统管控</b> 规则表认不出</span>
+      </div>
+      <div class="drawers" id="drawers"></div>
+
+      <div class="lock-gate">
+        <h2>执行台</h2>
+        <p class="sub">第 1 步预览（什么都不删）→ 第 2 步打出确认语才执行 → 第 3 步清空废纸篓，空间才真正回来。</p>
+        <div class="gate-lines">
+          <div class="gate-line">
+            <span class="gate-tip">第 1 步 · 先看一眼</span>
+            <button id="btnPreview" disabled>预览选中的 0 项</button>
+            <span class="release">预计释放 <b id="relSize">0 KB</b></span>
+          </div>
+          <div class="gate-line">
+            <span class="gate-tip">第 2 步 · 在此打出 <b>确认清理</b>：</span>
+            <input type="text" id="confirmText" placeholder="确认清理" style="width:150px" autocomplete="off" aria-label="确认文本">
+            <button class="danger" id="btnApply" disabled>执行清理（移到废纸篓）</button>
+            <span class="count" style="margin:0;flex:none">可逆，随时能从废纸篓找回</span>
+          </div>
+          <div class="gate-line">
+            <span class="gate-tip">第 3 步 · 在此打出 <b>清空废纸篓</b>：</span>
+            <input type="text" id="trashText" placeholder="清空废纸篓" style="width:150px" autocomplete="off" aria-label="清空废纸篓确认文本">
+            <button class="danger" id="btnTrash">清空废纸篓</button>
+            <span class="count" style="margin:0;flex:none">这一步不可逆，才真正释放空间</span>
+          </div>
+        </div>
+        <div class="notice" id="notice" hidden role="status"></div>
+        <pre class="out" id="out" hidden></pre>
+      </div>
+
+      <details class="panel" id="aiPanel">
+        <summary><svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M1 1l6.5 4L1 9z" stroke="#C9B79B" stroke-width="1.2" stroke-linejoin="round"/></svg>运行 AI 判断 · 给「系统管控」里的未知目录看一眼</summary>
+        <div class="panel-body">
+          <div class="rail">
+            <span class="lock" id="aiStatus" style="letter-spacing:0">检查中…</span>
+            <input type="password" id="keyInput" placeholder="TypeSafe / Jev key" style="width:220px;display:none" autocomplete="off">
+            <button class="mini" id="btnSaveKey" style="display:none">保存 key</button>
+          </div>
+          <div class="rail">
+            <label class="inline">判断最大的 <input type="text" id="judgeTop" value="15" style="width:56px;text-align:center" inputmode="numeric"> 项</label>
+            <label class="inline"><input type="checkbox" id="judgeUnknown" class="pick-box" checked style="width:15px;height:15px"> 只判断规则表认不出的</label>
+            <button class="mini" id="btnJudge">运行 AI 判断</button>
+          </div>
+          <p class="privacy">Jev 是外部接口：会把<b>目录路径、大小、最后修改时间、子目录名</b>发到 TypeSafe 服务器，
+            换回「这是什么数据 / 能不能删 / 删了可不可恢复」的概率判断。结果是<b>参考</b>不是判决，最后仍由你拍板；
+            不运行它，界面完全不联网。</p>
+        </div>
+      </details>
+    </section>
+  </div>
+
+  <section class="register" aria-label="登记簿">
+    <h2>登记簿</h2>
+    <div class="log" id="log"></div>
+  </section>
+
+  <footer>
+    <span>引擎在本机 <code>127.0.0.1</code> 上跑，只有「运行 AI 判断」会联网。</span>
+    <span>规则来自技能 <code>macos-deep-optimize</code>
+      <button class="mini ghost" id="btnQuit" style="margin-left:10px">关闭服务</button>
+    </span>
+  </footer>
+</div>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let ITEMS = [], SEL = new Set(), TOUCHED = false, PHASE = "idle", ELAPSED = 0, SPEC = [], SEEN = new Set(), SIG = "";
+
+const TIER = {
+  green:  { name:"可安全清理", color:"#E8A33D", prefix:"G", hint:"纯缓存 / 可再生" },
+  yellow: { name:"需你判断",   color:"#C4755C", prefix:"Y", hint:"含你的数据" },
+  unknown:{ name:"系统管控",   color:"#7FD1C4", prefix:"S", hint:"规则表认不出" }
+};
+const shortP = p => p.replace(/^\/Users\/[^/]+/, "~");
+const kb = n => n >= 1048576 ? (n/1048576).toFixed(2)+" GB" : n >= 1024 ? (n/1024).toFixed(0)+" MB" : Math.round(n)+" KB";
+const classifier = p => /\/Caches\//.test(p) || /\/\.cache\//.test(p) || /\/node_modules\//.test(p)
+  || /DerivedData|CoreSimulator/.test(p) || /\/Logs\/?$/.test(p);
+
+/* ---------- 与引擎的接口（未改） ---------- */
+async function api(path, body){
+  const o = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
+  try { const r = await fetch(path, o); return await r.json(); }
+  catch(e){ return {ok:false, error:"引擎没有响应：" + e.message}; }
+}
+function say(kind, text){
+  const n = $("notice"); n.className = "notice " + (kind||""); n.textContent = text; n.hidden = false;
+}
+const hideNotice = () => { $("notice").hidden = true; };
+function logLine(text, cls){
+  const d = document.createElement("div");
+  const t = new Date().toLocaleTimeString("zh-CN", {hour12:false});
+  d.innerHTML = `<time>${t}</time><span class="${cls||""}"></span>`;
+  d.lastChild.textContent = text;
+  $("log").appendChild(d);
+  $("log").scrollTop = $("log").scrollHeight;
+  while ($("log").children.length > 200) $("log").firstChild.remove();
+}
+
+/* ---------- 尘埃：随光漂移的粒子带（深度＝远近） ---------- */
+(function dust(){
+  const c = $("dust"), x = c.getContext("2d");
+  let W=0,H=0,P=[],px=0,py=0,tx=0,ty=0;
+  const k = () => devicePixelRatio || 1;
+  function spawn(init){
+    const z = .25 + Math.random()*.75;
+    return { x:Math.random()*W, y: init ? Math.random()*H : H + 20*k(), z,
+             r:(.5 + z*1.5)*k(), v:(.06 + z*.22)*k(), a:.03 + z*.10, ph:Math.random()*6.2832 };
+  }
+  function build(){
+    W = c.width = innerWidth*k(); H = c.height = innerHeight*k();
+    c.style.width = innerWidth+"px"; c.style.height = innerHeight+"px";
+    P = Array.from({length: innerWidth < 700 ? 30 : 64}, () => spawn(true));
+  }
+  build();
+  addEventListener("resize", build);
+  addEventListener("pointermove", e => {
+    tx = (e.clientX/innerWidth - .5); ty = (e.clientY/innerHeight - .5);
+  }, {passive:true});
+  let t = 0;
+  (function frame(){
+    t += .011; px += (tx-px)*.045; py += (ty-py)*.045;
+    x.clearRect(0,0,W,H);
+    for (const p of P){
+      p.y -= p.v; p.x += Math.sin(t*1.4 + p.ph)*.24*k();
+      if (p.y < -30*k()) Object.assign(p, spawn(false));
+      const ox = -px*46*p.z*k(), oy = -py*30*p.z*k();
+      const cxx = innerWidth*k()*0.145, cyy = innerHeight*k()*0.30, rr = 215*k();
+      if (Math.hypot(p.x+ox-cxx, p.y+oy-cyy) < rr) continue;
+      const g = x.createRadialGradient(p.x+ox,p.y+oy,0,p.x+ox,p.y+oy,p.r*6);
+      g.addColorStop(0, `rgba(232,163,61,${p.a})`); g.addColorStop(1, "rgba(232,163,61,0)");
+      x.fillStyle = g; x.beginPath(); x.arc(p.x+ox,p.y+oy,p.r*6,0,6.2832); x.fill();
+    }
+    if (!RM) requestAnimationFrame(frame);
+  })();
+})();
+
+/* ---------- 磁盘环：外圈＝占用；内圈＝每一项的体量谱（实时数据重绘） ---------- */
+const ring = (function(){
+  const c = $("ring"), x = c.getContext("2d");
+  const S = 780, C = S/2, rOut = 330, rIn = 232;
+  let occ = 0, target = 0, anim = 0, sweep = 0;
+  function draw(){
+    x.clearRect(0,0,S,S);
+    x.strokeStyle = "rgba(244,231,207,.09)"; x.lineWidth = 2;
+    x.beginPath(); x.arc(C,C,rOut,0,6.2832); x.stroke();
+    const a0 = -Math.PI/2, a1 = a0 + 6.2832*occ;
+    const g = x.createLinearGradient(0,0,S,S);
+    g.addColorStop(0,"#E8A33D"); g.addColorStop(.55,"#C4755C"); g.addColorStop(1,"#8E6A4E");
+    x.strokeStyle = g; x.lineWidth = 9;
+    x.beginPath(); x.arc(C,C,rOut,a0,a1); x.stroke();
+    for (let i=0;i<=40;i++){
+      const a = a0 + 6.2832*(i/40), big = i%10 === 0, r1 = rOut - (big?26:16), r2 = rOut - 12;
+      x.strokeStyle = big ? "rgba(244,231,207,.30)" : "rgba(244,231,207,.13)";
+      x.lineWidth = big ? 2 : 1;
+      x.beginPath();
+      x.moveTo(C+Math.cos(a)*r1, C+Math.sin(a)*r1);
+      x.lineTo(C+Math.cos(a)*r2, C+Math.sin(a)*r2); x.stroke();
+    }
+    x.save(); x.translate(C,C);
+    if (SPEC.length){
+      const max = Math.max.apply(null, SPEC.map(i => i.kb).concat([1]));
+      const step = 6.2832/SPEC.length;
+      SPEC.forEach((it, idx) => {
+        const a = -Math.PI/2 + idx*step;
+        const len = 26 + 150*(Math.log(1+it.kb)/Math.log(1+max));
+        x.strokeStyle = it.on ? "#F3C169" : it.color + "8C";
+        x.lineWidth = it.on ? 3.4 : 1.6;
+        x.beginPath();
+        x.moveTo(Math.cos(a)*96, Math.sin(a)*96);
+        x.lineTo(Math.cos(a)*(96+len*anim), Math.sin(a)*(96+len*anim)); x.stroke();
+      });
+    } else {
+      x.strokeStyle = "rgba(244,231,207,.10)"; x.lineWidth = 1.4;
+      x.beginPath(); x.arc(0,0,150,0,6.2832); x.stroke();
+    }
+    x.strokeStyle = "rgba(244,231,207,.12)"; x.lineWidth = 1.5;
+    x.beginPath(); x.arc(0,0,96,0,6.2832); x.stroke();
+    if (PHASE === "scanning"){
+      sweep += .06; const a = sweep % 6.2832;
+      const sg = x.createRadialGradient(Math.cos(a)*rIn,Math.sin(a)*rIn,0,Math.cos(a)*rIn,Math.sin(a)*rIn,rOut);
+      sg.addColorStop(0,"rgba(232,163,61,0)"); sg.addColorStop(1,"rgba(232,163,61,.85)");
+      x.strokeStyle = sg; x.lineWidth = 14; x.lineCap = "round";
+      x.beginPath(); x.arc(0,0,(rOut+rIn)/2, a, a+.5); x.stroke();
+    }
+    x.restore();
+    anim += (1-anim)*.09;
+    if (target > occ) occ += (target-occ)*.06;
+    if (!RM) requestAnimationFrame(draw);
+  }
+  draw();
+  return {
+    set(pct){ target = Math.max(0, Math.min(1, pct/100)); },
+    spec(list){ SPEC = list; }
+  };
+})();
+
+/* ---------- 清单 ---------- */
+const mark = (tier, size) => {
+  const s = size || 11, c = (TIER[tier] || TIER.unknown).color;
+  if (tier === "green") return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+  if (tier === "yellow") return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><path d="M6 1.2l5 8.4H1z" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.4v2.4" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/></svg>`;
+  return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><circle cx="6" cy="5.5" r="4.3" stroke="${c}" stroke-width="1.3"/><path d="M6 3.4v2.6M6 7.9v.2" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/></svg>`;
+};
+function jevText(ai){
+  const p = (ai.safe_to_delete == null) ? "?" : Math.round(ai.safe_to_delete*100)+"%";
+  const rec = (ai.recoverability == null || ai.recoverability === "") ? "?" : ai.recoverability;
+  const word = ai.tier === "green" ? "建议删" : (ai.tier === "red" ? "别删" : "拿不准");
+  return `Jev ${word} · 可删 ${p} · 恢复性 ${rec}`;
+}
+function cardHTML(it, idx, maxKB, leadPct){
+  const t = TIER[it.tier] || TIER.unknown;
+  const used = it.size_kb || 0;
+  const w = Math.max(1.6, 100*(Math.log(1+used)/Math.log(1+Math.max(maxKB,1))));
+  const on = SEL.has(it.path);
+  const tagAI = it.ai ? `<span class="tag" title="${jevText(it.ai)}">${mark(it.tier)}Jev</span>`
+                      : (it.tier !== "unknown" ? `<span class="tag">${mark("unknown")}未判断</span>` : "");
+  const tagFix = it.selectable ? "" : `<span class="tag">${mark("yellow")}不可自动清理</span>`;
+  const verdict = it.ai
+    ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}" title="${it.ai.advice ? it.ai.advice.replace(/"/g,"&quot;") : ""}">${jevText(it.ai)}</span>`
+    : `<span class="verdict mute">${it.selectable ? "可勾选" : "受保护"}</span>`;
+  return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${SEEN.has(it.path) ? "seen" : ""}" data-path="${it.path.replace(/"/g,"&quot;")}">
+    <input type="checkbox" class="pick-box" data-path="${it.path.replace(/"/g,"&quot;")}" ${on ? "checked" : ""} ${it.selectable ? "" : "disabled"} aria-label="${(it.name||it.path).replace(/"/g,"&quot;")}">
+    <span class="no" title="${t.name} · 按体量排序第 ${idx+1} 项">${String(idx+1).padStart(2,"0")}</span>
+    <span class="nm">${it.name || shortP(it.path).split("/").pop()}${tagFix}${tagAI}</span>
+    <span class="sz">${it.size}</span>
+    <span class="under">
+      <span class="ruler" title="体量刻度（对数）"><i style="width:${w}%;background:${t.color}"></i><span class="lead" style="left:${leadPct}%"></span></span>
+      ${verdict}
+    </span>
+    <span class="path">${shortP(it.path)}</span>
+    ${it.note ? `<span class="note" title="${it.note.replace(/"/g,"&quot;")}">${it.note}</span>` : ""}
+  </label>`;
+}
+function renderDrawers(items){
+  const wrap = $("drawers");
+  if (!items.length){
+    wrap.innerHTML = `<div class="empty"><b style="color:var(--paper)">还没有体检记录。</b>
+      点「开始体检」跑一次只读扫描（1–3 分钟，期间电脑照常用），结果会按下面三格抽屉分好：
+      <div class="steps">
+        <div class="step"><span class="k">抽屉 1</span><span><b>可安全清理</b>：纯缓存 / 可再生，勾选后可以直接执行。</span></div>
+        <div class="step"><span class="k">抽屉 2</span><span><b>需你判断</b>：含你的数据；只有标「可自动清理」的纯缓存子目录能勾。</span></div>
+        <div class="step"><span class="k">抽屉 3</span><span><b>系统管控</b>：规则表认不出的目录，交给 AI 看一眼，仅供参考。</span></div>
+      </div></div>`;
+    return;
+  }
+  const maxKB = Math.max.apply(null, items.map(i => i.size_kb || 0).concat([1]));
+  const leadPct = Math.min(99, 100*(Math.log(1+102400)/Math.log(1+maxKB)));
+  $("vocab").hidden = false;
+  wrap.innerHTML = ["green","yellow","unknown"].map(tier => {
+    const list = items.filter(i => i.tier === tier);
+    if (!list.length) return "";
+    const t = TIER[tier], total = list.reduce((s,i) => s+(i.size_kb||0), 0);
+    const selList = list.filter(i => SEL.has(i.path));
+    const selKB = selList.reduce((s,i) => s+(i.size_kb||0), 0);
+    const hint = tier === "green" ? "勾选后可直接执行"
+              : tier === "yellow" ? "只有标「可自动清理」的纯缓存子目录能勾，其余请按提示进对应 App 处理"
+              : "AI 判断仅供参考，不能自动清理";
+    return `<div class="drawer">
+      <div class="drawer-head">
+        <span class="tier">${mark(tier,13)}${t.name}</span>
+        <span class="drawer-meta">${list.length} 项 · ${kb(total)} · 刻度线＝100 MB${selList.length ? ` · 已选 ${selList.length} 项 ${kb(selKB)}` : ""}</span>
+        <span class="drawer-hint">${hint} · ${t.hint}</span>
+      </div>
+      <div class="drawer-body" data-scroll="${list.length > 9 ? 1 : 0}">
+        ${list.map((it,i) => cardHTML(it, i, maxKB, leadPct)).join("")}
+      </div>
+      ${list.length > 9 ? `<button class="mini ghost expand" data-n="${list.length}">展开全部 ${list.length} 项</button>` : ""}
+    </div>`;
+  }).join("");
+  wrap.querySelectorAll("button.expand").forEach(b => {
+    b.addEventListener("click", () => {
+      const body = b.previousElementSibling;
+      const open = body.classList.toggle("full");
+      b.textContent = open ? "收起" : `展开全部 ${b.dataset.n} 项`;
+    });
+  });
+  wrap.querySelectorAll("input.pick-box").forEach(cb => {
+    cb.addEventListener("change", () => {
+      TOUCHED = true;
+      if (cb.checked) SEL.add(cb.dataset.path); else SEL.delete(cb.dataset.path);
+      const card = cb.closest(".card");
+      if (card) card.classList.toggle("on", cb.checked);
+      updateSel(); paintSpec();
+    });
+  });
+}
+function updateSel(){
+  let n = 0, sum = 0, cap = 0;
+  ITEMS.forEach(i => { if (i.selectable) cap++; if (SEL.has(i.path)) { n++; sum += i.size_kb || 0; } });
+  $("selCount").innerHTML = `已选 <b>${n}</b> / ${cap} 项 · ${kb(sum)}`;
+  $("relSize").textContent = kb(sum);
+  $("btnPreview").textContent = `预览选中的 ${n} 项`;
+  $("btnPreview").disabled = !n;
+  $("btnApply").disabled = !n;
+}
+let FREE_SHOWN = null;
+function tickFree(gb){            // 可用空间跳格：从旧值数到新值，而不是啪一下换掉
+  const el = $("freeNum");
+  const from = FREE_SHOWN == null ? gb : FREE_SHOWN;
+  if (gb === from){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  FREE_SHOWN = gb;
+  if (RM){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  const t0 = performance.now(), dur = Math.min(1200, 260 + Math.abs(gb-from)*40);
+  (function step(now){
+    const k = Math.min(1, (now-t0)/dur), e = 1-Math.pow(1-k, 3);
+    const v = (from + (gb-from)*e).toFixed(1);
+    el.innerHTML = `${v}<small>GB 可用</small>`;
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+function paintSpec(){
+  ring.spec(ITEMS.map(i => ({ kb:i.size_kb || 0, on:SEL.has(i.path), color:(TIER[i.tier] || TIER.unknown).color })));
+}
+function rerender(){ renderDrawers(ITEMS); paintSpec(); updateSel(); }
+
+/* ---------- 同步 ---------- */
+async function refresh(){
+  const s = await api("/api/state");
+  if (s.phase === undefined) return;
+  PHASE = s.phase; ELAPSED = s.elapsed || 0;
+  const d = s.disk || {};
+  if (d.free_gb != null){
+    tickFree(d.free_gb);
+    $("factUsed").textContent = `${d.used_gb} / ${d.total_gb} GB`;
+    $("factPct").textContent = `${d.pct}%`;
+    $("capPct").textContent = `${d.pct}%`;
+    $("factMount").textContent = d.mount || "—";
+    ring.set(d.pct);
+  }
+  const scanning = PHASE === "scanning", judging = PHASE === "judging", busy = scanning || judging || PHASE === "cleaning";
+  $("btnScan").disabled = busy;
+  $("btnScan").textContent = scanning ? `扫描中 ${Math.round(ELAPSED)}s` : "开始体检";
+  $("btnReport").disabled = !s.has_scan;
+  $("btnJudge").disabled = busy || !s.has_scan;
+  $("btnJudge").textContent = judging ? `判断中 ${Math.round(ELAPSED)}s` : "运行 AI 判断";
+  if (s.error) say("err", s.error);
+  else if (scanning) say("warn", "正在只读扫描（1–3 分钟，期间可继续用电脑）…");
+  else if (PHASE === "idle" && s.notice) say("", s.notice);
+  else if (!$("out").hidden) { /* 保留上一次的输出，不覆盖 */ }
+  if (s.scan_at) $("stamp").textContent = `上次体检 ${s.scan_at}` + (s.scan_seconds ? ` · 用时 ${s.scan_seconds}s` : "");
+  const j = s.judged || {};
+  if (j.count != null) $("aiStatus").innerHTML = `已配置 key · 上次判断 ${j.count} 项（${j.model || ""}）`;
+
+  if (Array.isArray(s.items)){
+    const sig = s.items.map(i => i.path + (i.ai ? "1" : "0")).join("|");
+    if (sig !== SIG){
+      SIG = sig;
+      ITEMS = s.items;
+      if (!TOUCHED) SEL = new Set(ITEMS.filter(i => i.selectable).map(i => i.path));
+      const green = ITEMS.filter(i => i.tier === "green").reduce((a,i) => a+(i.size_kb||0), 0);
+      $("factCand").textContent = `${ITEMS.filter(i => i.selectable).length} 项可勾 · ${kb(green)}`;
+      rerender();
+    }
+  } else { paintSpec(); }
+}
+
+/* ---------- 交互 ---------- */
+$("btnScan").onclick = async () => {
+  say("warn", "已开始扫描…");
+  const r = await api("/api/scan", {});
+  if (r && r.ok === false) say("err", r.error || "扫描没能启动");
+  logLine("开始体检（只读扫描）");
+  refresh();
+};
+$("btnReport").onclick = async () => {
+  const r = await api("/api/report", {});
+  if (r.ok){ logLine("完整报告已生成", "g"); window.open(r.url, "_blank"); }
+  else say("err", r.error || "报告生成失败");
+};
+$("btnWeb").onclick = () => window.open(location.href, "_blank");
+$("btnWl").onclick = async () => {
+  const r = await api("/api/whitelist", {action:"list"});
+  say("", "保护名单（永不清理）：\n" + (r.output || "（空）"));
+};
+$("btnHist").onclick = async () => {
+  const r = await api("/api/history");
+  say("", "操作历史：\n" + (r.output || "（空）"));
+};
+const setSel = f => { TOUCHED = true; SEL = new Set(ITEMS.filter(f).map(i => i.path)); rerender(); };
+$("btnAll").onclick = () => setSel(i => i.selectable);
+$("btnNone").onclick = () => setSel(() => false);
+$("btnBig").onclick = () => setSel(i => i.selectable && (i.size_kb || 0) >= 102400);
+$("btnCache").onclick = () => setSel(i => i.selectable && classifier(i.path));
+$("btnInvert").onclick = () => {
+  TOUCHED = true;
+  const inv = new Set();
+  ITEMS.forEach(i => { if (i.selectable && !SEL.has(i.path)) inv.add(i.path); });
+  SEL = inv; rerender();
+};
+$("btnSaveKey").onclick = async () => {
+  const k = $("keyInput").value.trim();
+  if (!k) return say("err", "key 不能为空");
+  const r = await api("/api/typesafe", {key:k});
+  if (r.ok){
+    $("keyInput").value = ""; $("keyInput").style.display = "none"; $("btnSaveKey").style.display = "none";
+    $("aiStatus").textContent = "已配置 key";
+    logLine("TypeSafe key 已保存", "g"); say("ok", "key 已保存。");
+  } else say("err", r.error || "保存失败");
+};
+$("btnJudge").onclick = async () => {
+  const top = parseInt($("judgeTop").value || "15", 10);
+  say("warn", "正在调用 Jev 判断…");
+  $("out").hidden = false; $("out").textContent = "调用 Jev 判断中（每个目录 3 个问题、5 个一批）…";
+  const r = await api("/api/judge", {top, only_unknown: $("judgeUnknown").checked});
+  if (r.ok){
+    $("out").textContent = (r.output || "") + "\n\n判断完成：" + JSON.stringify(r.judged || {});
+    say("ok", "AI 判断完成，清单与报告都已更新。");
+    logLine("AI 判断完成", "g");
+    TOUCHED = false; SIG = ""; refresh();
+  } else {
+    $("out").textContent = r.output || r.error || "失败";
+    say("err", r.error || "AI 判断失败");
+    logLine("AI 判断失败：" + (r.error || ""), "e");
+  }
+};
+$("btnPreview").onclick = async () => {
+  const paths = Array.from(SEL);
+  if (!paths.length) return say("err", "没勾选任何项");
+  $("out").hidden = false; $("out").textContent = "预览生成中…";
+  const r = await api("/api/clean", {mode:"preview", paths});
+  $("out").textContent = r.output || JSON.stringify(r);
+  say(r.ok ? "ok" : "err", r.ok ? `以上是预览（勾选 ${paths.length} 项），什么都没删。` : (r.error || "预览失败"));
+  logLine(`预览 ${paths.length} 项`, r.ok ? "g" : "e");
+};
+$("btnApply").onclick = async () => {
+  const paths = Array.from(SEL);
+  if (!paths.length) return say("err", "没勾选任何项");
+  const t = $("confirmText").value.trim();
+  if (t !== "确认清理") return say("err", "请先在输入框里打出：确认清理");
+  burst(paths);
+  $("out").hidden = false; $("out").textContent = "执行中…";
+  const r = await api("/api/clean", {mode:"apply", confirm:t, paths});
+  $("out").textContent = r.output || JSON.stringify(r);
+  const d = (r.free_after_gb != null && r.free_before_gb != null)
+    ? `可用空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB。` : "";
+  say(r.ok ? "ok" : "err", (r.ok ? "已移入废纸篓（可逆）。" : "清理有问题：") + d + (r.ok ? " 想真正释放空间，再清空废纸篓。" : ""));
+  if (r.ok) paths.forEach(p => SEEN.add(p));
+  $("confirmText").value = "";
+  logLine(`${r.ok ? "清理完成" : "清理失败"}：${paths.length} 项`, r.ok ? "g" : "e");
+  TOUCHED = false; SIG = ""; refresh();
+};
+$("btnTrash").onclick = async () => {
+  const t = $("trashText").value.trim();
+  if (t !== "清空废纸篓") return say("err", "请先在输入框里打出：清空废纸篓");
+  say("warn", "正在清空废纸篓…");
+  const r = await api("/api/trash", {confirm:t});
+  say(r.ok ? "ok" : "err", r.ok ? `废纸篓已清空，当前可用 ${r.free_gb} GB。` : (r.error || "清空失败（可能弹了 Finder 授权窗）"));
+  $("trashText").value = "";
+  logLine(r.ok ? `废纸篓已清空，可用 ${r.free_gb} GB` : "清空废纸篓失败", r.ok ? "g" : "e");
+  refresh();
+};
+$("btnQuit").onclick = async () => {
+  await api("/api/quit", {});
+  document.querySelector(".shell").innerHTML =
+    `<div style="padding:60px 0"><h1 style="margin:0 0 8px">服务已关闭</h1>
+     <p style="color:var(--paper-dim);margin:0">要再打开，双击 ~/Applications 里的「Mac 清理助手」。</p></div>`;
+};
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape") hideNotice();
+  if (SEEN.size && (e.key === "Enter" || e.key === " " || e.key === "Escape")){
+    SEEN.clear();
+    document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
+  }
+});
+
+/* ---------- 签名动作：卡片升起，散成灯下尘埃流向磁盘环 ---------- */
+function burst(paths){
+  if (RM) return;
+  const c = $("dust"), x = c.getContext("2d");
+  const W = c.width, H = c.height, k = devicePixelRatio || 1;
+  // 尘埃要真的落进磁盘环：拿环的实时位置（并夹在当前视口内，滚到执行台也看得到）
+  const ringEl = document.querySelector(".dial .face") || document.getElementById("ring");
+  const rr = ringEl.getBoundingClientRect();
+  let cx = (rr.left + rr.width/2)*k, cy = (rr.top + rr.height/2)*k;
+  cx = Math.max(60*k, Math.min(W-60*k, cx));
+  cy = Math.max(80*k, Math.min(H-80*k, cy));
+  const parts = [];
+  paths.slice(0, 24).forEach(p => {
+    const card = document.querySelector(`.card[data-path="${CSS.escape(p)}"]`);
+    if (!card) return;
+    const r = card.getBoundingClientRect();
+    for (let i=0;i<24;i++){
+      parts.push({ x:(r.left + Math.random()*r.width)*k, y:(r.top + Math.random()*r.height)*k,
+                   vx:(Math.random()-.5)*2.2*k, vy:(Math.random()-.5)*2.2*k, life:1,
+                   r:(.7 + Math.random()*1.9)*k });
+    }
+    card.style.transition = "transform .5s cubic-bezier(.16,.84,.24,1), opacity .5s";
+    card.style.transform = "translate(7px,-14px)"; card.style.opacity = ".38";
+  });
+  if (!parts.length) return;
+  (function step(){
+    x.clearRect(0,0,W,H);
+    let alive = 0;
+    for (const p of parts){
+      if (p.life <= 0) continue;
+      alive++;
+      const dx = cx-p.x, dy = cy-p.y, d = Math.hypot(dx,dy) || 1;
+      p.vx += (dx/d)*.55; p.vy += (dy/d)*.55;
+      p.vx *= .93; p.vy *= .93;
+      p.x += p.vx; p.y += p.vy; p.life -= .012;
+      const a = Math.max(0, p.life)*.7;
+      const g = x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*7);
+      g.addColorStop(0, `rgba(243,193,105,${a})`); g.addColorStop(1, "rgba(232,163,61,0)");
+      x.fillStyle = g; x.beginPath(); x.arc(p.x,p.y,p.r*7,0,6.2832); x.fill();
+    }
+    if (alive) requestAnimationFrame(step);
+  })();
+}
+
+/* ---------- 启动 ---------- */
+(async function boot(){
+  logLine("界面已就绪 · 档案抽屉", "g");
+  const t = await api("/api/typesafe");
+  if (t && t.configured) $("aiStatus").innerHTML = `已配置 key（${t.source === "env" ? "环境变量" : "~/.config/typesafe/key"}）`;
+  else {
+    $("aiStatus").textContent = "未配置 key —— 填一次即可（只写进 ~/.config/typesafe/key，权限 600）";
+    $("keyInput").style.display = "inline-block"; $("btnSaveKey").style.display = "inline-block";
+  }
+  renderDrawers([]);
+  await refresh();
+  setInterval(refresh, 1500);
+})();
+</script>
+</body>
+</html>

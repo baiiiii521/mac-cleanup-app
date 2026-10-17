@@ -3,64 +3,77 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Mac 清理助手 · 档案抽屉</title>
+<title>Mac 清理助手 · 档案鼓</title>
 <style>
 /* ============================================================
-   档案抽屉 · 除尘与退役
+   档案鼓 · 除尘与退役  (v3)
    世界只借四样：字体分级、调色、密度、一个签名动作。
-   布局、导航、控件仍是本平台的标准件。
+   布局、导航、控件仍是标准件——先是个干活的工具，再谈好看。
    ============================================================ */
 :root{
-  --ink-900:#100D0A; --ink-850:#15110D; --ink-800:#191512; --ink-750:#1F1A15; --ink-700:#261F19;
-  --line:rgba(244,231,207,.10); --line-2:rgba(244,231,207,.18);
-  --paper:#F4E7CF; --paper-dim:#D2C1A5; --paper-faint:#B3A288;
-  --lamp:#E8A33D; --clay:#C4755C; --cyan:#7FD1C4; --verm:#E0552C;
+  --ink-900:#0B0906;  --ink-850:#12100B; --ink-800:#17140F; --ink-750:#1E1A14;
+  --ink-700:#241F17;  --ink-650:#2C251C;
+  --line:rgba(244,231,207,.10); --line-2:rgba(244,231,207,.19);
+  --paper:#F6EAD4; --paper-dim:#D6C6AA; --paper-faint:#B5A488;
+  --lamp:#F0A93B; --lamp-hi:#FFCB73;
+  --clay:#C4755C; --cyan:#7FD1C4; --verm:#E4572E;
   --radius:3px;
   --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,monospace;
   --sans:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",system-ui,sans-serif;
-  --shadow-lift:0 22px 44px -20px rgba(0,0,0,.95), 0 3px 10px -4px rgba(0,0,0,.8);
+  --spring:cubic-bezier(.2,1.28,.3,1);
+  --shadow-card:0 14px 30px -18px rgba(0,0,0,.95), 0 2px 6px -3px rgba(0,0,0,.8);
+  --shadow-lift:0 30px 60px -26px rgba(0,0,0,.98), 0 4px 12px -4px rgba(0,0,0,.85);
 }
 *{box-sizing:border-box}
-html,body{height:100%}
-body{margin:0;background:var(--ink-900);color:var(--paper);font:14px/1.65 var(--sans);
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ink-900);color:var(--paper);font:14.5px/1.65 var(--sans);
   -webkit-font-smoothing:antialiased;font-variant-numeric:tabular-nums;overflow-x:hidden}
-/* 台灯：暗房间里唯一的光源 */
+
+/* 暗房：一束灯，一层颗粒，一圈暗角 */
 body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-  background:radial-gradient(1100px 620px at 12% -6%, rgba(232,163,61,.13), transparent 62%),
-             radial-gradient(900px 700px at 108% 8%, rgba(196,117,92,.07), transparent 60%),
-             linear-gradient(180deg,#13100C 0%,#100D0A 42%,#0C0A08 100%)}
-body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E")}
-#dust{position:fixed;inset:0;z-index:1;pointer-events:none}
-.shell{position:relative;z-index:2;max-width:1460px;margin:0 auto;padding:34px 52px 64px}
+  background:
+    radial-gradient(1250px 780px at 9% -12%, rgba(240,169,59,.20), transparent 58%),
+    radial-gradient(1000px 820px at 104% 4%, rgba(196,117,92,.10), transparent 56%),
+    radial-gradient(1400px 900px at 50% 120%, rgba(240,169,59,.05), transparent 60%),
+    linear-gradient(180deg,#141009 0%,#0B0906 46%,#080705 100%)}
+/* 光柱：斜着落下，尘埃在里面才看得见 */
+body::after{content:"";position:fixed;top:-18vh;left:2vw;width:52vw;height:120vh;pointer-events:none;z-index:1;
+  transform:rotate(14deg);transform-origin:top left;opacity:.5;
+  background:linear-gradient(180deg,rgba(255,203,115,.13),rgba(240,169,59,.05) 38%,transparent 76%);
+  -webkit-mask-image:linear-gradient(100deg,transparent 6%,#000 34%,#000 62%,transparent 96%);
+          mask-image:linear-gradient(100deg,transparent 6%,#000 34%,#000 62%,transparent 96%)}
+#atmos{position:fixed;inset:0;z-index:2;pointer-events:none}
+.shell{position:relative;z-index:3;max-width:1560px;margin:0 auto;padding:34px 56px 72px}
 
 /* ---------- 报头 ---------- */
-.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;flex-wrap:wrap;
-  padding-bottom:18px;border-bottom:1px solid var(--line)}
-.mark{display:flex;align-items:center;gap:14px}
+.masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:30px;flex-wrap:wrap;
+  padding-bottom:20px;border-bottom:1px solid var(--line-2)}
+.mark{display:flex;align-items:center;gap:15px}
 .mark svg{flex:none}
-h1{margin:0;font-size:31px;font-weight:600;letter-spacing:-.028em;line-height:1.1}
-.how{margin:7px 0 0;color:var(--paper-dim);font-size:13.5px;max-width:74ch;text-wrap:pretty}
+h1{margin:0;font-size:36px;font-weight:600;letter-spacing:-.035em;line-height:1.04}
+.how{margin:8px 0 0;color:var(--paper-dim);font-size:14px;max-width:78ch;text-wrap:pretty}
 .how b{color:var(--paper);font-weight:600}
-.safe-line{display:flex;align-items:center;gap:8px;margin:0;max-width:46ch;font-size:12px;color:var(--paper-faint);line-height:1.6;text-wrap:pretty}
+.safe-line{display:flex;align-items:center;gap:9px;margin:0;max-width:44ch;font-size:12.5px;color:var(--paper-faint);
+  line-height:1.6;text-wrap:pretty}
 .safe-line svg{flex:none}
-.lock{display:flex;align-items:center;gap:7px;font-size:12px;letter-spacing:.02em;color:var(--paper-faint)}
-.lock svg{flex:none}
 
 /* ---------- 舞台 ---------- */
-.stage{display:grid;grid-template-columns:390px minmax(0,1fr);gap:30px;margin-top:26px;align-items:start}
-@media (max-width:1080px){.stage{grid-template-columns:1fr}}
+.stage{display:grid;grid-template-columns:452px minmax(0,1fr);gap:34px;margin-top:28px;align-items:start}
+@media (max-width:1180px){.stage{grid-template-columns:1fr;gap:26px}}
 
-/* ---------- 磁盘测具 ---------- */
+/* ---------- 档案鼓（真 3D 投影，软件渲染） ---------- */
 .instrument{position:relative}
-.dial .face{position:relative;width:100%;max-width:390px;aspect-ratio:1/1;margin:0 auto}
-#ring{width:100%;height:100%;display:block}
-.dial-read{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none}
-.free{font:600 40px/1 var(--mono);letter-spacing:-.03em}
-.free small{font:400 13px/1 var(--sans);letter-spacing:.04em;color:var(--paper-dim);display:block;margin-top:9px}
-.dial-cap{margin:12px 0 0;font-size:12px;color:var(--paper-faint);line-height:1.6;max-width:46ch;text-wrap:pretty}
-.dial-legend{display:flex;justify-content:center;gap:16px;margin-top:4px;flex-wrap:wrap}
-.dial-legend span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--paper-faint);letter-spacing:.05em}
+.drum-wrap{position:relative;width:100%;max-width:452px;aspect-ratio:1/1;margin:0 auto}
+#drum{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#drum:active{cursor:grabbing}
+.drum-read{position:absolute;inset:0;padding-bottom:13%;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  pointer-events:none;text-align:center}
+.free{font:600 50px/1 var(--mono);letter-spacing:-.04em}
+.free small{font:400 14px/1 var(--sans);letter-spacing:.07em;color:#E4D6BA;display:block;margin-top:11px}
+.drum-sub{margin-top:12px;font:11.5px/1 var(--mono);letter-spacing:.1em;color:var(--paper-faint)}
+.drum-cap{margin:14px 0 0;font-size:12.5px;color:var(--paper-faint);line-height:1.65;max-width:47ch;text-wrap:pretty}
+.drum-legend{display:flex;gap:18px;margin-top:12px;flex-wrap:wrap}
+.drum-legend span{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--paper-faint);letter-spacing:.04em}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
 .facts{margin:20px 0 0;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:0}
 .fact{display:flex;justify-content:space-between;gap:16px;font-size:12.5px;padding:7px 0;border-top:1px solid rgba(244,231,207,.07)}
@@ -71,236 +84,294 @@ h1{margin:0;font-size:31px;font-weight:600;letter-spacing:-.028em;line-height:1.
 
 /* ---------- 控件 ---------- */
 button{font:inherit;color:var(--paper);background:linear-gradient(180deg,var(--ink-700),var(--ink-800));
-  border:1px solid var(--line-2);border-radius:var(--radius);padding:9px 15px;cursor:pointer;
-  box-shadow:0 1px 0 rgba(244,231,207,.05) inset,0 6px 14px -12px #000;
-  transition:transform .18s cubic-bezier(.2,.8,.2,1),border-color .18s,background .18s,color .18s}
-button:hover:not(:disabled){border-color:rgba(232,163,61,.45);transform:translateY(-1px)}
-button:active:not(:disabled){transform:translateY(0) scale(.985)}
-button:disabled{opacity:.42;cursor:not-allowed}
-button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
-button.primary{background:linear-gradient(180deg,#F0B255,#D8912C);border-color:#C98420;color:#241703;font-weight:600}
-button.primary:hover:not(:disabled){border-color:#FFC978}
-button.danger{color:#FFC8B6;border-color:rgba(224,85,44,.42)}
-button.danger:hover:not(:disabled){border-color:var(--verm);background:linear-gradient(180deg,#2A1510,#20100C)}
-button.mini{padding:5px 11px;font-size:12.5px;border-radius:2px}
+  border:1px solid var(--line-2);border-radius:var(--radius);padding:10px 16px;cursor:pointer;
+  box-shadow:0 1px 0 rgba(244,231,207,.06) inset,0 8px 18px -14px #000;
+  transition:transform .24s var(--spring),border-color .2s,background .2s,color .2s,box-shadow .24s}
+button:hover:not(:disabled){border-color:rgba(240,169,59,.5);transform:translateY(-2px);box-shadow:0 12px 24px -16px #000}
+button:active:not(:disabled){transform:translateY(0) scale(.98)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--lamp);outline-offset:2px}
+button.primary{background:linear-gradient(180deg,var(--lamp-hi),#D08F27);border-color:#C98420;color:#26180A;font-weight:600}
+button.primary:hover:not(:disabled){border-color:#FFDC9A}
+button.danger{color:#FFCDBD;border-color:rgba(228,87,46,.44)}
+button.danger:hover:not(:disabled){border-color:var(--verm);background:linear-gradient(180deg,#2E1610,#22110C)}
+button.mini{padding:6px 12px;font-size:12.5px;border-radius:2px}
 button.ghost{background:none;box-shadow:none;border-color:var(--line)}
-button.ghost:hover:not(:disabled){background:rgba(244,231,207,.04)}
+button.ghost:hover:not(:disabled){background:rgba(244,231,207,.045)}
 input[type=text],input[type=password]{font:inherit;font-family:var(--mono);font-size:13px;color:var(--paper);
-  background:rgba(0,0,0,.42);border:1px solid var(--line-2);border-radius:var(--radius);padding:9px 12px;min-width:0}
+  background:rgba(0,0,0,.46);border:1px solid var(--line-2);border-radius:var(--radius);padding:10px 12px;min-width:0;
+  caret-color:var(--lamp);transition:border-color .2s,background .2s}
 input::placeholder{color:var(--paper-faint)}
-input[type=text]:focus,input[type=password]:focus{border-color:rgba(232,163,61,.5);background:rgba(0,0,0,.55)}
-input{caret-color:var(--lamp)}
-.gate-tip{font-size:12.5px;color:var(--paper-faint);white-space:nowrap}
-.gate-tip b{color:var(--paper-dim);font-weight:600}
-::selection{background:rgba(232,163,61,.3);color:#FFF6E4}
-.rail{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+input[type=text]:focus,input[type=password]:focus{border-color:rgba(240,169,59,.55);background:rgba(0,0,0,.6)}
+::selection{background:rgba(240,169,59,.32);color:#FFF7E6}
+.rail{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .rail + .rail{margin-top:12px}
 .rail.util button{font-size:12.5px;padding:7px 12px;color:var(--paper-dim)}
-.rail.util{margin-top:10px}
 .count{margin-left:auto;font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);white-space:nowrap}
-.count b{color:var(--lamp);font-weight:600}
+.count b{color:var(--lamp-hi);font-weight:600}
 
-/* ---------- 抽屉 ---------- */
+/* ---------- 抽屉（有厚度：透视抬起的卡片叠） ---------- */
+.drawers{margin-top:22px;display:grid;gap:26px;perspective:1600px}
 .vocab{margin:16px 0 0;display:flex;gap:22px;flex-wrap:wrap;font-size:12px;color:var(--paper-faint)}
 .vocab .v{display:flex;align-items:center;gap:7px;white-space:nowrap}
 .vocab .v svg{flex:none}
 .vocab b{color:var(--paper-dim);font-weight:600}
-.drawers{margin-top:20px;display:grid;gap:22px}
-.drawer{border-top:1px solid var(--line-2);padding-top:14px}
-.drawer-head{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.tier{display:flex;align-items:center;gap:9px;font-size:15px;font-weight:600;letter-spacing:-.01em}
+.drawer{position:relative;transform-style:preserve-3d}
+.drawer-tab{position:relative;display:inline-flex;align-items:baseline;gap:12px;padding:7px 18px 8px;
+  border:1px solid var(--line-2);border-bottom:none;border-radius:4px 12px 0 0;
+  background:linear-gradient(180deg,var(--ink-700),var(--ink-800));
+  box-shadow:0 -1px 0 rgba(244,231,207,.05) inset,0 -10px 20px -18px #000}
+.drawer-tab::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--ink-800)}
+.tier{display:flex;align-items:center;gap:9px;font-size:15.5px;font-weight:600;letter-spacing:-.012em}
 .tier svg{flex:none}
 .drawer-meta{font-family:var(--mono);font-size:12px;color:var(--paper-faint);letter-spacing:.03em}
-.drawer-hint{flex:1 1 260px;font-size:12px;color:var(--paper-faint);text-align:right}
-.drawer-body{margin-top:11px;display:grid;gap:7px;max-height:var(--cap,2000px);overflow-y:auto;padding-right:3px;
-  transition:max-height .42s cubic-bezier(.16,.84,.24,1)}
-.drawer-body[data-scroll="1"]{--cap:376px}
-.drawer-body.full{--cap:6000px}
-button.expand{margin-top:9px;align-self:flex-start}
-.drawer-body::-webkit-scrollbar{width:9px}
-.drawer-body::-webkit-scrollbar-track{background:rgba(0,0,0,.3);border-radius:5px}
-.drawer-body::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px;border:2px solid transparent;background-clip:content-box}
-.drawer-body::-webkit-scrollbar-thumb:hover{background:rgba(232,163,61,.4);background-clip:content-box}
+.drawer-body{margin-top:0;display:grid;gap:9px;max-height:var(--cap,2600px);overflow-y:auto;padding:12px 4px 4px 1px;
+  border-top:1px solid var(--line-2);transition:max-height .46s cubic-bezier(.16,.84,.24,1)}
+.drawer-body[data-scroll="1"]{--cap:398px}
+.drawer-body.full{--cap:7000px}
+.drawer-hint{flex:1 1 300px;font-size:12px;color:var(--paper-faint);text-align:right}
+button.expand{margin-top:10px;align-self:flex-start}
+.drawer-body::-webkit-scrollbar{width:10px}
+.drawer-body::-webkit-scrollbar-track{background:rgba(0,0,0,.34);border-radius:5px}
+.drawer-body::-webkit-scrollbar-thumb{background:rgba(244,231,207,.17);border-radius:5px;border:2px solid transparent;background-clip:content-box}
+.drawer-body::-webkit-scrollbar-thumb:hover{background:rgba(240,169,59,.45);background-clip:content-box}
 
 /* ---------- 目录卡 ---------- */
-.card{position:relative;display:grid;grid-template-columns:20px 46px minmax(0,1fr) auto;gap:6px 11px;
-  align-items:center;padding:11px 14px 12px;border:1px solid var(--line);border-radius:var(--radius);
-  background:linear-gradient(180deg,var(--ink-750),var(--ink-800));
-  transition:transform .26s cubic-bezier(.16,.84,.24,1),border-color .2s,background .2s,box-shadow .26s}
+.card{position:relative;display:grid;grid-template-columns:20px 48px minmax(0,1fr) auto;gap:7px 12px;
+  align-items:center;padding:12px 15px 13px;border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(178deg,var(--ink-750),var(--ink-800) 62%,#14110D);
+  transform-origin:left center;
+  transition:transform .34s var(--spring),border-color .22s,background .22s,box-shadow .34s,opacity .4s}
 .card.pick{cursor:pointer}
-.card.pick:hover{border-color:var(--line-2);transform:translateX(3px)}
-.card.on{transform:translate(7px,-1px);border-color:rgba(232,163,61,.42);
-  background:linear-gradient(180deg,#2A2114,#1D1710);box-shadow:var(--shadow-lift)}
-.card.fixed{background:linear-gradient(180deg,#181410,#141110)}
-.card.seen{background:linear-gradient(180deg,#2A2013,#1C1610);border-color:rgba(232,163,61,.3)}
-.card.seen::after{content:"已退役";position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-7deg);
+.card.pick:hover{transform:translateX(6px) rotateX(1.4deg) scale(1.004);border-color:var(--line-2);
+  background:linear-gradient(178deg,#262019,#171410 62%,#14110D);box-shadow:var(--shadow-card)}
+.card.on{transform:translateX(13px) rotateY(-1.1deg);border-color:rgba(240,169,59,.46);
+  background:linear-gradient(178deg,#312516,#1E180F 64%,#191309);box-shadow:var(--shadow-lift)}
+.card.on::before{content:"";position:absolute;left:0;top:0;bottom:0;width:2px;border-radius:2px 0 0 2px;
+  background:linear-gradient(180deg,var(--lamp-hi),rgba(240,169,59,.15))}
+.card.fixed{background:linear-gradient(178deg,#171410,#12100C 70%)}
+.card.releasing{transform:translate(13px,-26px) rotateY(-6deg) scale(1.015);border-color:rgba(255,203,115,.7);
+  box-shadow:0 44px 76px -32px rgba(0,0,0,.98);z-index:5}
+.card.seen{background:linear-gradient(178deg,#241C10,#16120B 70%);border-color:rgba(240,169,59,.28);opacity:.82}
+.card.seen::after{content:"已退役";position:absolute;right:15px;top:50%;transform:translateY(-50%) rotate(-7deg);
   font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--lamp);opacity:.5;
-  border:1px solid rgba(232,163,61,.45);border-radius:2px;padding:1px 6px;pointer-events:none}
-.pick-box{appearance:none;-webkit-appearance:none;width:17px;height:17px;margin:0;border:1px solid var(--line-2);
-  border-radius:2px;background:rgba(0,0,0,.45);cursor:pointer;position:relative;transition:border-color .16s,background .16s}
-.pick-box:hover{border-color:rgba(232,163,61,.6)}
-.pick-box:checked{background:var(--lamp);border-color:#F3B95F}
-.pick-box:checked::after{content:"";position:absolute;left:5px;top:1.5px;width:4px;height:9px;
+  border:1px solid rgba(240,169,59,.45);border-radius:2px;padding:1px 6px;pointer-events:none;
+  animation:stampIn .42s var(--spring)}
+@keyframes stampIn{from{transform:translateY(-50%) rotate(-7deg) scale(1.8);opacity:0}to{transform:translateY(-50%) rotate(-7deg) scale(1);opacity:.5}}
+.pick-box{appearance:none;-webkit-appearance:none;width:18px;height:18px;margin:0;border:1px solid var(--line-2);
+  border-radius:2px;background:rgba(0,0,0,.5);cursor:pointer;position:relative;transition:border-color .16s,background .16s,transform .3s var(--spring)}
+.pick-box:hover{border-color:rgba(240,169,59,.65);transform:scale(1.08)}
+.pick-box:checked{background:linear-gradient(180deg,var(--lamp-hi),var(--lamp));border-color:#F7C066}
+.pick-box:checked::after{content:"";position:absolute;left:5.5px;top:2px;width:4px;height:9px;
   border:solid #2A1A05;border-width:0 2px 2px 0;transform:rotate(42deg)}
+.card.on .pick-box:checked{animation:settle .5s var(--spring)}
+@keyframes settle{0%{transform:scale(1.6)}60%{transform:scale(.92)}100%{transform:scale(1)}}
 .pick-box:disabled{cursor:default;opacity:.42}
-.card.seen .pick-box:checked{animation:settle .5s cubic-bezier(.16,.84,.24,1)}
-@keyframes settle{0%{transform:scale(1.5)}60%{transform:scale(.94)}100%{transform:scale(1)}}
 .no{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--paper-faint)}
-.card.on .no{color:var(--lamp)}
-.nm{min-width:0;font-size:14.5px;font-weight:600;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tag{display:inline-flex;align-items:center;gap:5px;margin-left:9px;font-family:var(--mono);font-size:12px;
-  letter-spacing:.05em;color:var(--paper-faint);vertical-align:1px;font-weight:400}
+.card.on .no{color:var(--lamp-hi)}
+.nm{min-width:0;font-size:15px;font-weight:600;letter-spacing:-.012em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag{display:inline-flex;align-items:center;gap:5px;margin-left:10px;font-family:var(--mono);font-size:12px;
+  letter-spacing:.04em;color:var(--paper-faint);vertical-align:1.5px;font-weight:400}
 .tag svg{flex:none}
-.sz{font-family:var(--mono);font-size:13px;color:var(--paper-dim);white-space:nowrap;text-align:right}
+.sz{font-family:var(--mono);font-size:13.5px;color:var(--paper-dim);white-space:nowrap;text-align:right}
 .card.on .sz{color:var(--paper)}
-.under{grid-column:2/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 16px;align-items:center}
-.ruler{position:relative;height:9px;border-radius:1px;background:rgba(0,0,0,.42);border:1px solid var(--line);overflow:hidden}
-.ruler i{position:absolute;inset:0 auto 0 0;border-radius:1px}
+.under{grid-column:2/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:5px 16px;align-items:center}
+.ruler{position:relative;height:10px;border-radius:1px;background:rgba(0,0,0,.46);border:1px solid var(--line);overflow:hidden}
+.ruler i{position:absolute;inset:0 auto 0 0;border-radius:1px;transition:width .5s cubic-bezier(.16,.84,.24,1)}
 .ruler i::after{content:"";position:absolute;inset:0;opacity:.85;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M0 6L6 0' stroke='%23000' stroke-opacity='.45' stroke-width='1.4'/%3E%3C/svg%3E")}
-.ruler .lead{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(244,231,207,.32)}
+.ruler .lead{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(246,234,212,.34)}
 .verdict{font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);white-space:nowrap;letter-spacing:.02em}
 .verdict.neg{color:var(--clay)}
 .verdict.mute{color:var(--paper-faint)}
-.path{grid-column:1/-1;font-family:var(--mono);font-size:12.5px;color:#B8A78C;
+.path{grid-column:1/-1;font-family:var(--mono);font-size:12.5px;color:#BCAB8F;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .note{grid-column:1/-1;font-size:12.5px;color:var(--paper-dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card.fixed .nm{color:var(--paper-dim)}
-.empty{padding:24px 2px;color:var(--paper-dim);font-size:13.5px;border-top:1px solid var(--line)}
-.steps{display:grid;gap:10px;margin-top:14px}
-.step{display:grid;grid-template-columns:58px 1fr;gap:12px;align-items:baseline;font-size:13.5px;color:var(--paper-dim)}
+
+/* 每张卡自己的动作（单条直接清） */
+.card-actions{grid-column:4;display:flex;justify-content:flex-end;gap:6px}
+button.act{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:6px 11px;border-radius:2px;
+  background:linear-gradient(180deg,#2A2116,#1D1811);border-color:rgba(240,169,59,.28);color:#F7D79A;
+  opacity:.42;transition:opacity .2s,transform .24s var(--spring),border-color .2s,background .2s}
+.card:hover button.act,.card:focus-within button.act,button.act:focus-visible{opacity:1}
+button.act:hover{transform:translateY(-2px) scale(1.03);border-color:rgba(255,203,115,.7);background:linear-gradient(180deg,#362917,#231C11)}
+.card.releasing button.act,.card.seen button.act{display:none}
+.rowconfirm{grid-column:1/-1;margin-top:9px;padding:11px 13px;border:1px solid rgba(240,169,59,.4);border-radius:var(--radius);
+  background:linear-gradient(180deg,#2B2113,#1A150D);display:grid;gap:10px;animation:sheetIn .3s var(--spring)}
+.rowconfirm p{margin:0;font-size:12.8px;color:var(--paper-dim);line-height:1.6}
+.rowconfirm p b{color:var(--paper)}
+.rowconfirm .act-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.rowconfirm[hidden]{display:none}
+@keyframes sheetIn{from{opacity:0;transform:translateY(-8px) scale(.985)}to{opacity:1;transform:none}}
+
+.empty{padding:26px 3px;color:var(--paper-dim);font-size:14px;border-top:1px solid var(--line)}
+.steps{display:grid;gap:11px;margin-top:15px}
+.step{display:grid;grid-template-columns:64px 1fr;gap:13px;align-items:baseline;font-size:13.5px;color:var(--paper-dim)}
 .step b{color:var(--paper);font-weight:600}
 .step .k{font-family:var(--mono);font-size:11.5px;color:var(--lamp)}
 
 /* ---------- 执行台 ---------- */
-.lock-gate{margin-top:26px;border:1px solid var(--line);border-radius:var(--radius);
-  background:linear-gradient(180deg,rgba(38,31,25,.72),rgba(25,21,18,.72));padding:18px 18px 16px}
-.lock-gate h2{margin:0 0 3px;font-size:15px;font-weight:600;letter-spacing:-.01em}
-.lock-gate p.sub{margin:0 0 14px;font-size:12.5px;color:var(--paper-faint)}
-.gate-lines{display:grid;gap:12px}
+.lock-gate{margin-top:28px;border:1px solid var(--line);border-radius:var(--radius);
+  background:linear-gradient(180deg,rgba(44,36,26,.72),rgba(23,20,15,.78));padding:19px 19px 17px;
+  box-shadow:0 20px 44px -34px #000}
+.lock-gate h2{margin:0 0 4px;font-size:15.5px;font-weight:600;letter-spacing:-.012em}
+.lock-gate p.sub{margin:0 0 15px;font-size:12.5px;color:var(--paper-faint);text-wrap:pretty}
+.gate-lines{display:grid;gap:13px}
 .gate-line{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.gate-tip{font-size:12.5px;color:var(--paper-faint);white-space:nowrap}
+.gate-tip b{color:var(--paper-dim);font-weight:600}
 .release{font-family:var(--mono);font-size:13px;color:var(--paper-dim)}
-.release b{color:var(--lamp);font-weight:600}
-.notice{margin:14px 0 0;padding:11px 13px;border-radius:var(--radius);font-size:13px;white-space:pre-wrap;
-  border:1px solid var(--line-2);background:rgba(0,0,0,.34);color:var(--paper-dim)}
-.notice.ok{border-color:rgba(244,231,207,.30);color:#E6D8BE}
-.notice.err{border-color:rgba(224,85,44,.44);color:#F3BCA9}
-.notice.warn{border-color:rgba(232,163,61,.44);color:#F0D19A}
+.release b{color:var(--lamp-hi);font-weight:600}
+.notice{margin:14px 0 0;padding:12px 14px;border-radius:var(--radius);font-size:13px;white-space:pre-wrap;
+  border:1px solid var(--line-2);background:rgba(0,0,0,.36);color:var(--paper-dim)}
+.notice.ok{border-color:rgba(246,234,212,.3);color:#E8DAC0}
+.notice.err{border-color:rgba(228,87,46,.46);color:#F5C0AD}
+.notice.warn{border-color:rgba(240,169,59,.46);color:#F2D49C}
 .notice[hidden]{display:none}
-pre.out{margin:14px 0 0;padding:13px 15px;border:1px solid var(--line);border-radius:var(--radius);
-  background:rgba(0,0,0,.42);max-height:290px;overflow:auto;font:12px/1.6 var(--mono);color:var(--paper-dim);
+pre.out{margin:14px 0 0;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius);
+  background:rgba(0,0,0,.44);max-height:300px;overflow:auto;font:12px/1.62 var(--mono);color:var(--paper-dim);
   white-space:pre-wrap;word-break:break-word}
 pre.out[hidden]{display:none}
-pre.out::-webkit-scrollbar{width:9px}
-pre.out::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px}
+pre.out::-webkit-scrollbar{width:10px}
+pre.out::-webkit-scrollbar-thumb{background:rgba(244,231,207,.17);border-radius:5px}
+
+/* ---------- 批量确认闸门（点一下，不打字） ---------- */
+.sheet{position:fixed;inset:0;z-index:40;display:flex;align-items:flex-end;justify-content:center;
+  padding:0 20px 34px;background:linear-gradient(180deg,rgba(6,5,4,.62),rgba(6,5,4,.86));backdrop-filter:blur(2px)}
+.sheet[hidden]{display:none}
+.sheet-in{width:min(680px,100%);border:1px solid rgba(240,169,59,.36);border-radius:6px;
+  background:linear-gradient(180deg,#241D13,#161209);box-shadow:0 44px 80px -40px #000;padding:20px 22px 18px;
+  animation:sheetUp .34s var(--spring)}
+@keyframes sheetUp{from{opacity:0;transform:translateY(26px) scale(.99)}to{opacity:1;transform:none}}
+.sheet-in h3{margin:0 0 6px;font-size:17px;font-weight:600;letter-spacing:-.02em}
+.sheet-meta{margin:0 0 13px;font-size:13px;color:var(--paper-dim)}
+.sheet-meta b{color:var(--lamp-hi)}
+.sheet-list{margin:0 0 16px;padding:0;list-style:none;display:grid;gap:5px;max-height:190px;overflow:auto;
+  font-family:var(--mono);font-size:12.5px;color:var(--paper-faint)}
+.sheet-list li{display:flex;justify-content:space-between;gap:14px;border-top:1px solid rgba(244,231,207,.07);padding-top:5px}
+.sheet-list li:first-child{border-top:none;padding-top:0}
+.sheet-act{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.sheet-act .hint{font-size:12.5px;color:var(--paper-faint)}
+.sheet-act .hint.warn{color:#F2D49C}
 
 /* ---------- AI / 工具 ---------- */
-details.panel{margin-top:20px;border-top:1px solid var(--line);padding-top:14px}
+details.panel{margin-top:22px;border-top:1px solid var(--line);padding-top:15px}
 details.panel > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;
-  font-size:14px;font-weight:600;color:var(--paper)}
+  font-size:14.5px;font-weight:600;color:var(--paper)}
 details.panel > summary::-webkit-details-marker{display:none}
-details.panel > summary svg{flex:none;transition:transform .2s}
+details.panel > summary svg{flex:none;transition:transform .22s}
 details.panel[open] > summary svg{transform:rotate(90deg)}
-.panel-body{margin-top:13px;display:grid;gap:12px}
-.privacy{font-size:12.5px;color:var(--paper-faint);max-width:76ch;line-height:1.62;margin:0}
+.panel-body{margin-top:14px;display:grid;gap:12px}
+.privacy{font-size:12.5px;color:var(--paper-faint);max-width:78ch;line-height:1.62;margin:0}
 .privacy b{color:var(--paper-dim);font-weight:600}
 label.inline{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--paper-dim)}
 
 /* ---------- 登记簿 ---------- */
-.register{margin-top:26px;border-top:1px solid var(--line-2);padding-top:12px}
-.register h2{margin:0 0 10px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.14em;color:var(--paper-faint)}
-.log{max-height:170px;overflow-y:auto;font-family:var(--mono);font-size:12px;line-height:1.72;color:var(--paper-dim)}
-.log div{display:grid;grid-template-columns:78px 1fr;gap:12px;border-top:1px solid rgba(244,231,207,.055);padding:3px 0}
+.register{margin-top:28px;border-top:1px solid var(--line-2);padding-top:13px}
+.register h2{margin:0 0 10px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.16em;color:var(--paper-faint)}
+.log{max-height:176px;overflow-y:auto;font-family:var(--mono);font-size:12px;line-height:1.74;color:var(--paper-dim)}
+.log div{display:grid;grid-template-columns:80px 1fr;gap:12px;border-top:1px solid rgba(244,231,207,.06);padding:3px 0}
 .log div:first-child{border-top:none}
 .log time{color:var(--paper-faint)}
-.log .e{color:#F3BCA9}.log .g{color:#E6D8BE}.log .w{color:#F0D19A}
-.log::-webkit-scrollbar{width:9px}
-.log::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px}
+.log .e{color:#F5C0AD}.log .g{color:#E8DAC0}.log .w{color:#F2D49C}
+.log::-webkit-scrollbar{width:10px}
+.log::-webkit-scrollbar-thumb{background:rgba(244,231,207,.17);border-radius:5px}
 
-footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
+footer{margin-top:36px;padding-top:17px;border-top:1px solid var(--line);display:flex;justify-content:space-between;
   gap:16px;flex-wrap:wrap;font-size:11.5px;color:var(--paper-faint);letter-spacing:.03em}
 footer code{font-family:var(--mono);color:var(--paper-dim)}
 
-@media (max-width:1080px){
-  .shell{padding:24px 20px 52px}
+/* ---------- 响应 ---------- */
+@media (max-width:1180px){
+  .shell{padding:26px 24px 56px}
+  h1{font-size:29px}
+  .drum-wrap{max-width:392px}
+  .free{font-size:48px}
+  .drawer-hint{text-align:left;flex:1 1 100%}
   .nm,.note{white-space:normal;overflow:visible;text-overflow:clip}
   .path{white-space:normal;word-break:break-all}
-  h1{font-size:26px}
-  .drawer-hint{text-align:left;flex:1 1 100%}
+  button.act{opacity:1}
 }
 @media (max-width:560px){
   .stage{gap:22px}
-  .nm{white-space:normal;overflow:visible;text-overflow:clip;line-height:1.4}
-  .note{white-space:normal;overflow:visible;text-overflow:clip}
-  .path{white-space:normal;word-break:break-all}
-  button{min-height:42px;padding:11px 14px;font-size:13.5px}
-  button.mini{min-height:38px;padding:9px 12px}
-  input[type=text],input[type=password]{min-height:42px;width:100% !important}
-  pre.out{max-height:46vh}
-  .gate-line{gap:8px}
-  .card{grid-template-columns:20px 40px minmax(0,1fr);padding:10px 11px}
+  .card{grid-template-columns:20px 40px minmax(0,1fr);padding:11px 12px}
   .sz{grid-column:3;text-align:left}
-  .free{font:600 32px/1 var(--mono)}
+  .card-actions{grid-column:3;justify-content:flex-start}
+  .free{font-size:40px}
   .rail{gap:7px}
-  button{padding:9px 12px;font-size:13px}
+  button{min-height:44px;padding:12px 15px;font-size:13.5px}
+  button.mini{min-height:40px;padding:10px 13px}
+  input[type=text],input[type=password]{min-height:44px;width:100% !important}
+  pre.out{max-height:44vh}
+  .gate-line{gap:8px}
   .count{margin-left:0;width:100%}
+  .sheet{padding:0 12px 18px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
-  #dust{display:none}
+  #atmos,body::after{display:none}
 }
 </style>
 </head>
 <body>
-<canvas id="dust" aria-hidden="true"></canvas>
+<canvas id="atmos" aria-hidden="true"></canvas>
 
 <div class="shell">
   <header class="masthead">
     <div class="mark">
-      <svg width="38" height="38" viewBox="0 0 38 38" fill="none" aria-hidden="true">
-        <rect x="4.5" y="7.5" width="29" height="23" rx="2.5" stroke="#E8A33D" stroke-width="1.2"/>
-        <path d="M4.5 13.5h29" stroke="rgba(232,163,61,.5)" stroke-width="1.2"/>
-        <path d="M9 18.5h7M9 22.5h12M9 26.5h5" stroke="rgba(244,231,207,.5)" stroke-width="1.2" stroke-linecap="round"/>
-        <rect x="24" y="17.5" width="6.5" height="9" rx="1" stroke="#F4E7CF" stroke-width="1.1"/>
+      <svg width="42" height="42" viewBox="0 0 42 42" fill="none" aria-hidden="true">
+        <circle cx="21" cy="21" r="16.5" stroke="rgba(240,169,59,.55)" stroke-width="1.2"/>
+        <ellipse cx="21" cy="21" rx="16.5" ry="6" stroke="rgba(240,169,59,.32)" stroke-width="1.2"/>
+        <path d="M21 4.5v33M8.6 11.4l24.8 19.2M8.6 30.6l24.8-19.2" stroke="rgba(246,234,212,.22)" stroke-width="1"/>
+        <rect x="15.5" y="14" width="11" height="14" rx="1.4" fill="#0E0B07" stroke="#F6EAD4" stroke-width="1.1"/>
+        <path d="M17.8 18.4h6.4M17.8 21.4h4.6" stroke="rgba(246,234,212,.6)" stroke-width="1.1" stroke-linecap="round"/>
       </svg>
       <div>
         <h1>Mac 清理助手</h1>
-        <p class="how">先做一次<b>只读</b>体检，结果分三格抽屉；逐项勾选 → <b>先预览</b> → 确认了才动手。删除一律进废纸篓，可反悔。</p>
+        <p class="how">先做一次<b>只读</b>体检，结果按三格抽屉摊开；想清哪条就点哪条的「清理」，也可以一次勾好一起清。动的都只是废纸篓，<b>可逆</b>。</p>
       </div>
     </div>
-    <p class="safe-line"><svg width="13" height="14" viewBox="0 0 12 13" fill="none" aria-hidden="true"><path d="M6 1.5l4 2v3c0 2.4-1.7 4.2-4 5-2.3-.8-4-2.6-4-5v-3z" stroke="#B3A288"/></svg>
-      只读扫描 · 默认只预览 · 勾选只做交集：你的选择只能把范围收窄，系统不会替你扩大</p>
+    <p class="safe-line"><svg width="14" height="15" viewBox="0 0 12 13" fill="none" aria-hidden="true"><path d="M6 1.5l4 2v3c0 2.4-1.7 4.2-4 5-2.3-.8-4-2.6-4-5v-3z" stroke="#B5A488"/></svg>
+      只读扫描 · 清理前先摊开 · 勾选只做交集：你的选择只能把范围收窄，系统不会替你扩大</p>
   </header>
 
   <div class="stage">
+    <!-- 档案鼓 -->
     <section class="instrument" aria-label="磁盘">
-      <div class="dial">
-        <div class="face">
-          <canvas id="ring" width="780" height="780"></canvas>
-          <div class="dial-read">
-            <div class="free" id="freeNum">—<small>GB 可用</small></div>
-          </div>
+      <div class="drum-wrap">
+        <canvas id="drum" width="904" height="904" aria-label="磁盘占用与清单体量的立体视图"
+                title="拖动可以转动这只鼓"></canvas>
+        <div class="drum-read">
+          <div class="free" id="freeNum">—<small>GB 可用</small></div>
         </div>
       </div>
-      <div class="dial-legend">
-        <span><i class="dot" style="background:#E8A33D"></i>可安全清理</span>
+      <p class="drum-sub" id="drumSub">占用率 —</p>
+      <p class="drum-cap" id="drumCap">鼓里的液面＝磁盘占用（越高越满）；鼓里立着的每一张卡＝清单里的一项，卡的高度是它的体量（对数刻度）；被抽出来发亮的就是你勾选的；
+        上口那圈青色弧＝还没被占用的空间。可以拖动转动它。</p>
+      <div class="drum-legend">
+        <span><i class="dot" style="background:#F0A93B"></i>可安全清理</span>
         <span><i class="dot" style="background:#C4755C"></i>需你判断</span>
         <span><i class="dot" style="background:#7FD1C4"></i>系统管控</span>
       </div>
-      <p class="dial-cap">外圈＝磁盘占用（已用 <span id="capPct">—</span>） · 内圈每一根＝清单里的一项，长度是它的体量（对数刻度）；亮起来的就是你勾选的</p>
       <dl class="facts">
         <div class="fact"><dt>已用 / 总容量</dt><dd id="factUsed">—</dd></div>
-        <div class="fact"><dt>占用率</dt><dd id="factPct">—</dd></div>
         <div class="fact"><dt>清理候选</dt><dd id="factCand">—</dd></div>
         <div class="fact"><dt>分区</dt><dd id="factMount">—</dd></div>
       </dl>
       <div class="stamp" id="stamp">还没有体检记录</div>
     </section>
 
+    <!-- 工作区 -->
     <section aria-label="清单与操作">
       <div class="rail">
         <button class="primary" id="btnScan">开始体检</button>
-        <button id="btnReport" disabled>打开完整报告</button>
+        <button id="btnCleanSel" disabled>清理选中的 0 项</button>
+        <button class="ghost" id="btnPreview" disabled>先预览</button>
+        <button id="btnReport" disabled>完整报告</button>
+      </div>
+      <div class="rail util">
         <button class="ghost" id="btnWeb">在浏览器打开</button>
         <button class="ghost" id="btnWl">保护名单</button>
         <button class="ghost" id="btnHist">操作历史</button>
@@ -315,32 +386,27 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
       </div>
 
       <div class="vocab" id="vocab" hidden>
-        <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="#E8A33D" stroke-width="1.6" stroke-linecap="round"/></svg><b>可安全清理</b> 纯缓存、可再生</span>
+        <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="#F0A93B" stroke-width="1.6" stroke-linecap="round"/></svg><b>可安全清理</b> 纯缓存、可再生</span>
         <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><path d="M6 1.2l5 8.4H1z" stroke="#C4755C" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.4v2.4" stroke="#C4755C" stroke-width="1.2" stroke-linecap="round"/></svg><b>需你判断</b> 含你的数据，按提示处理</span>
         <span class="v"><svg width="12" height="11" viewBox="0 0 12 11" fill="none"><circle cx="6" cy="5.5" r="4.3" stroke="#7FD1C4" stroke-width="1.3"/><path d="M6 3.4v2.6M6 7.9v.2" stroke="#7FD1C4" stroke-width="1.3" stroke-linecap="round"/></svg><b>系统管控</b> 规则表认不出</span>
       </div>
+
       <div class="drawers" id="drawers"></div>
 
       <div class="lock-gate">
         <h2>执行台</h2>
-        <p class="sub">第 1 步预览（什么都不删）→ 第 2 步打出确认语才执行 → 第 3 步清空废纸篓，空间才真正回来。</p>
+        <p class="sub">可逆的事一次点击就够；只有不可逆的那一步，才请你亲手打出确认语。</p>
         <div class="gate-lines">
           <div class="gate-line">
-            <span class="gate-tip">第 1 步 · 先看一眼</span>
-            <button id="btnPreview" disabled>预览选中的 0 项</button>
-            <span class="release">预计释放 <b id="relSize">0 KB</b></span>
+            <button class="danger" id="btnApply" disabled>清理选中的 0 项（0 KB）</button>
+            <span class="release">全部移入废纸篓 · <b>可逆</b></span>
+            <button class="ghost mini" id="btnPreview2" disabled>先看一眼预览</button>
           </div>
           <div class="gate-line">
-            <span class="gate-tip">第 2 步 · 在此打出 <b>确认清理</b>：</span>
-            <input type="text" id="confirmText" placeholder="确认清理" style="width:150px" autocomplete="off" aria-label="确认文本">
-            <button class="danger" id="btnApply" disabled>执行清理（移到废纸篓）</button>
-            <span class="count" style="margin:0;flex:none">可逆，随时能从废纸篓找回</span>
-          </div>
-          <div class="gate-line">
-            <span class="gate-tip">第 3 步 · 在此打出 <b>清空废纸篓</b>：</span>
+            <span class="gate-tip">不可逆的那一步 · 在此打出 <b>清空废纸篓</b>：</span>
             <input type="text" id="trashText" placeholder="清空废纸篓" style="width:150px" autocomplete="off" aria-label="清空废纸篓确认文本">
             <button class="danger" id="btnTrash">清空废纸篓</button>
-            <span class="count" style="margin:0;flex:none">这一步不可逆，才真正释放空间</span>
+            <span class="count" style="margin:0;flex:none">只有这一步不保留退路</span>
           </div>
         </div>
         <div class="notice" id="notice" hidden role="status"></div>
@@ -348,10 +414,10 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
       </div>
 
       <details class="panel" id="aiPanel">
-        <summary><svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M1 1l6.5 4L1 9z" stroke="#C9B79B" stroke-width="1.2" stroke-linejoin="round"/></svg>运行 AI 判断 · 给「系统管控」里的未知目录看一眼</summary>
+        <summary><svg width="9" height="10" viewBox="0 0 9 10" fill="none"><path d="M1 1l6.5 4L1 9z" stroke="#D6C6AA" stroke-width="1.2" stroke-linejoin="round"/></svg>运行 AI 判断 · 给「系统管控」里的未知目录看一眼</summary>
         <div class="panel-body">
           <div class="rail">
-            <span class="lock" id="aiStatus" style="letter-spacing:0">检查中…</span>
+            <span class="lock" id="aiStatus" style="letter-spacing:0;font-size:12.5px;color:var(--paper-faint)">检查中…</span>
             <input type="password" id="keyInput" placeholder="TypeSafe / Jev key" style="width:220px;display:none" autocomplete="off">
             <button class="mini" id="btnSaveKey" style="display:none">保存 key</button>
           </div>
@@ -361,7 +427,7 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
             <button class="mini" id="btnJudge">运行 AI 判断</button>
           </div>
           <p class="privacy">Jev 是外部接口：会把<b>目录路径、大小、最后修改时间、子目录名</b>发到 TypeSafe 服务器，
-            换回「这是什么数据 / 能不能删 / 删了可不可恢复」的概率判断。结果是<b>参考</b>不是判决，最后仍由你拍板；
+            换回「这是什么数据 / 能不能删 / 删了可不可恢复」的概率判断。结果是<b>参考</b>不是判决；
             不运行它，界面完全不联网。</p>
         </div>
       </details>
@@ -381,15 +447,28 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
   </footer>
 </div>
 
+<!-- 批量确认闸门 -->
+<div class="sheet" id="sheet" hidden role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+  <div class="sheet-in">
+    <h3 id="sheetTitle">清理选中的项？</h3>
+    <p class="sheet-meta" id="sheetMeta"></p>
+    <ul class="sheet-list" id="sheetList"></ul>
+    <div class="sheet-act">
+      <button class="danger" id="sheetGo">移入废纸篓</button>
+      <button class="ghost" id="sheetNo">取消</button>
+      <span class="hint" id="sheetHint">可逆：之后能从废纸篓找回</span>
+    </div>
+  </div>
+</div>
+
 <script>
 "use strict";
 const $ = id => document.getElementById(id);
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let ITEMS = [], SEL = new Set(), TOUCHED = false, PHASE = "idle", ELAPSED = 0, SPEC = [], SEEN = new Set(), SIG = "";
-
+let ITEMS = [], SEL = new Set(), TOUCHED = false, PHASE = "idle", ELAPSED = 0, SEEN = new Set(), SIG = "";
 const TIER = {
-  green:  { name:"可安全清理", color:"#E8A33D", prefix:"G", hint:"纯缓存 / 可再生" },
+  green:  { name:"可安全清理", color:"#F0A93B", prefix:"G", hint:"纯缓存 / 可再生" },
   yellow: { name:"需你判断",   color:"#C4755C", prefix:"Y", hint:"含你的数据" },
   unknown:{ name:"系统管控",   color:"#7FD1C4", prefix:"S", hint:"规则表认不出" }
 };
@@ -397,8 +476,9 @@ const shortP = p => p.replace(/^\/Users\/[^/]+/, "~");
 const kb = n => n >= 1048576 ? (n/1048576).toFixed(2)+" GB" : n >= 1024 ? (n/1024).toFixed(0)+" MB" : Math.round(n)+" KB";
 const classifier = p => /\/Caches\//.test(p) || /\/\.cache\//.test(p) || /\/node_modules\//.test(p)
   || /DerivedData|CoreSimulator/.test(p) || /\/Logs\/?$/.test(p);
+const esc = s => String(s == null ? "" : s).replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;");
 
-/* ---------- 与引擎的接口（未改） ---------- */
+/* ---------- 引擎接口（未改） ---------- */
 async function api(path, body){
   const o = body ? {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)} : {};
   try { const r = await fetch(path, o); return await r.json(); }
@@ -407,7 +487,6 @@ async function api(path, body){
 function say(kind, text){
   const n = $("notice"); n.className = "notice " + (kind||""); n.textContent = text; n.hidden = false;
 }
-const hideNotice = () => { $("notice").hidden = true; };
 function logLine(text, cls){
   const d = document.createElement("div");
   const t = new Date().toLocaleTimeString("zh-CN", {hour12:false});
@@ -418,177 +497,378 @@ function logLine(text, cls){
   while ($("log").children.length > 200) $("log").firstChild.remove();
 }
 
-/* ---------- 尘埃：随光漂移的粒子带（深度＝远近） ---------- */
-(function dust(){
-  const c = $("dust"), x = c.getContext("2d");
+/* ============================================================
+   空气：光柱里的尘埃（深度＝远近，反应光标）
+   ============================================================ */
+(function atmos(){
+  const c = $("atmos"), x = c.getContext("2d");
   let W=0,H=0,P=[],px=0,py=0,tx=0,ty=0;
-  const k = () => devicePixelRatio || 1;
+  const k = () => Math.min(2, devicePixelRatio || 1);
   function spawn(init){
     const z = .25 + Math.random()*.75;
-    return { x:Math.random()*W, y: init ? Math.random()*H : H + 20*k(), z,
-             r:(.5 + z*1.5)*k(), v:(.06 + z*.22)*k(), a:.03 + z*.10, ph:Math.random()*6.2832 };
+    return { x:Math.random()*W, y: init ? Math.random()*H : H + 24*k(), z,
+             r:(.6 + z*1.9)*k(), v:(.07 + z*.26)*k(), a:.05 + z*.15, ph:Math.random()*6.2832,
+             warm: Math.random() < .8 };
   }
   function build(){
     W = c.width = innerWidth*k(); H = c.height = innerHeight*k();
     c.style.width = innerWidth+"px"; c.style.height = innerHeight+"px";
-    P = Array.from({length: innerWidth < 700 ? 30 : 64}, () => spawn(true));
+    P = Array.from({length: innerWidth < 700 ? 40 : 110}, () => spawn(true));
   }
-  build();
-  addEventListener("resize", build);
-  addEventListener("pointermove", e => {
-    tx = (e.clientX/innerWidth - .5); ty = (e.clientY/innerHeight - .5);
-  }, {passive:true});
+  build(); addEventListener("resize", build);
+  addEventListener("pointermove", e => { tx = e.clientX/innerWidth - .5; ty = e.clientY/innerHeight - .5; }, {passive:true});
   let t = 0;
   (function frame(){
-    t += .011; px += (tx-px)*.045; py += (ty-py)*.045;
+    t += .012; px += (tx-px)*.05; py += (ty-py)*.05;
     x.clearRect(0,0,W,H);
     for (const p of P){
-      p.y -= p.v; p.x += Math.sin(t*1.4 + p.ph)*.24*k();
+      p.y -= p.v; p.x += Math.sin(t*1.4 + p.ph)*.3*k();
       if (p.y < -30*k()) Object.assign(p, spawn(false));
-      const ox = -px*46*p.z*k(), oy = -py*30*p.z*k();
-      const cxx = innerWidth*k()*0.145, cyy = innerHeight*k()*0.30, rr = 215*k();
-      if (Math.hypot(p.x+ox-cxx, p.y+oy-cyy) < rr) continue;
-      const g = x.createRadialGradient(p.x+ox,p.y+oy,0,p.x+ox,p.y+oy,p.r*6);
-      g.addColorStop(0, `rgba(232,163,61,${p.a})`); g.addColorStop(1, "rgba(232,163,61,0)");
-      x.fillStyle = g; x.beginPath(); x.arc(p.x+ox,p.y+oy,p.r*6,0,6.2832); x.fill();
+      const ox = -px*54*p.z*k(), oy = -py*34*p.z*k();
+      const col = p.warm ? "240,169,59" : "246,234,212";
+      const g = x.createRadialGradient(p.x+ox,p.y+oy,0,p.x+ox,p.y+oy,p.r*7);
+      g.addColorStop(0, `rgba(${col},${p.a})`); g.addColorStop(1, `rgba(${col},0)`);
+      x.fillStyle = g; x.beginPath(); x.arc(p.x+ox,p.y+oy,p.r*7,0,6.2832); x.fill();
     }
     if (!RM) requestAnimationFrame(frame);
   })();
 })();
 
-/* ---------- 磁盘环：外圈＝占用；内圈＝每一项的体量谱（实时数据重绘） ---------- */
-const ring = (function(){
-  const c = $("ring"), x = c.getContext("2d");
-  const S = 780, C = S/2, rOut = 330, rIn = 232;
-  let occ = 0, target = 0, anim = 0, sweep = 0;
+/* ============================================================
+   档案鼓：真 3D 投影（软件渲染）——外圈＝占用，鼓身竖线＝每一项
+   ============================================================ */
+const drum = (function(){
+  const c = $("drum"), x = c.getContext("2d");
+  const S = 904, C = S/2;
+  const R = 244, HH = 224, F = 1430;
+  let rotY = 0.5, rotX = 0.40, spin = 0, auto = 1, dragging = false;
+  let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0;
+  let SPEC = [], CONSUMED = new Set(), EXTRA = new Map();
+
+  function project(p){
+    const cy = Math.cos(rotY), sy = Math.sin(rotY);
+    const X1 = p.x*cy - p.z*sy, Z1 = p.x*sy + p.z*cy;
+    const cx = Math.cos(rotX), sx = Math.sin(rotX);
+    const Y1 = p.y*cx - Z1*sx, Z2 = p.y*sx + Z1*cx;
+    const s = F/(F + Z2 + 760);
+    return { x: C + X1*s, y: C + Y1*s, s, z: Z2 };
+  }
+  const pt = (a, y, r) => project({ x:Math.cos(a)*r, y, z:Math.sin(a)*r });
+  function poly(pts, close){ x.beginPath(); pts.forEach((q,i) => i ? x.lineTo(q.x,q.y) : x.moveTo(q.x,q.y)); if (close) x.closePath(); }
+  function hoopPts(y, r, n){ const o=[]; for (let i=0;i<=n;i++){ const a=i/n*6.2832; o.push(pt(a,y,r)); } return o; }
+  function cardH(kb_, maxKB){ return 40 + 330*(Math.log(1+kb_)/Math.log(1+Math.max(maxKB,1))); }
+  function maxKB(){ return Math.max.apply(null, SPEC.map(i => i.kb).concat([1])); }
   function draw(){
+    if (!isFinite(rotY) || !isFinite(rotX)){ rotY = 0.5; rotX = 0.40; }   // 姿态兜底
     x.clearRect(0,0,S,S);
-    x.strokeStyle = "rgba(244,231,207,.09)"; x.lineWidth = 2;
-    x.beginPath(); x.arc(C,C,rOut,0,6.2832); x.stroke();
-    const a0 = -Math.PI/2, a1 = a0 + 6.2832*occ;
-    const g = x.createLinearGradient(0,0,S,S);
-    g.addColorStop(0,"#E8A33D"); g.addColorStop(.55,"#C4755C"); g.addColorStop(1,"#8E6A4E");
-    x.strokeStyle = g; x.lineWidth = 9;
-    x.beginPath(); x.arc(C,C,rOut,a0,a1); x.stroke();
+    const n = SPEC.length || 1, step = 6.2832/n, mKB = maxKB();
+    const yTop = -HH, yBot = HH;
+    const aL = -rotY, aR = Math.PI - rotY;               // 视线切线（左右轮廓所在角度）
+    const front = (yy, r, seg) => {                      // 前半圆的点列
+      const o = [];
+      for (let i=0;i<=seg;i++){ const a = aL + (aR-aL)*(i/seg); o.push(pt(a, yy, r)); }
+      return o;
+    };
+    const fTop = front(yTop, R, 56), fBot = front(yBot, R, 56);
+
+    // 1) 底座：鼓脚上落着一块影子
+    const sh = x.createRadialGradient(C, C + HH*1.02, 6, C, C + HH*1.02, R*1.22);
+    sh.addColorStop(0,"rgba(0,0,0,.42)"); sh.addColorStop(1,"rgba(0,0,0,0)");
+    x.fillStyle = sh; x.beginPath(); x.ellipse(C, C + HH*0.98, R*0.86, R*0.20, 0, 0, 6.2832); x.fill();
+    const base = pt(0, yBot, 0);
+    x.fillStyle = "rgba(20,16,10,.92)";
+    x.beginPath();
+    for (let i=0;i<=72;i++){ const a = i/72*6.2832; const q = pt(a, yBot, R); i ? x.lineTo(q.x,q.y) : x.moveTo(q.x,q.y); }
+    x.closePath(); x.fill();
+
+    // 2) 鼓身（前半圆柱面）：实体感的一层暗金墙面
+    const wall = fTop.concat(fBot.slice().reverse());
+    const wg = x.createLinearGradient(C-R, 0, C+R, 0);
+    wg.addColorStop(0,   "rgba(38,29,18,.94)");
+    wg.addColorStop(.42, "rgba(52,39,22,.95)");
+    wg.addColorStop(1,   "rgba(28,22,14,.94)");
+    x.fillStyle = wg; poly(wall, true); x.fill();
+
+    let yLine = EXTRA.get("yLine");
+    if (occAnim > .004){ yLine = yBot - (yBot-yTop)*occAnim; EXTRA.set("yLine", yLine); }
+
+    // 4) 鼓里立着的卡：每一项一张（高度＝体量，颜色＝归属）
+    const cards = [];
+    SPEC.forEach((it, i) => {
+      if (CONSUMED.has(it.path)) return;
+      const mid = i*step + spin, half = step*0.42;
+      const h = cardH(it.kb, mKB) * grown * (it.on ? 1.06 : 1);
+      const rad = R - 8;
+      const p = [ pt(mid-half, -h/2, rad), pt(mid+half, -h/2, rad), pt(mid+half, h/2, rad), pt(mid-half, h/2, rad) ];
+      cards.push({ it, p, mid, z:(p[0].z+p[3].z)/2, on:it.on, face:(Math.cos(mid+rotY) > 0) });
+    });
+    cards.sort((p,q) => q.z - p.z);
+    for (const cd of cards){
+      const t = cd.on ? { f:"rgba(255,203,115,.62)", e:"rgba(255,230,175,.98)" }
+                      : { f:cd.it.color + (cd.face ? "3E" : "1E"), e:cd.it.color + (cd.face ? "B0" : "58") };
+      const thin = 6;
+      x.fillStyle = cd.on ? "rgba(120,80,20,.9)" : "rgba(0,0,0,.45)";
+      poly(cd.p.map((q,i2) => ({ x:q.x + (i2<2 ? -thin*.5 : thin*.5), y:q.y })), true); x.fill();
+      x.fillStyle = t.f; poly(cd.p, true); x.fill();
+      x.strokeStyle = t.e; x.lineWidth = cd.on ? 2 : 1.1; poly(cd.p, true); x.stroke();
+      x.strokeStyle = cd.on ? "#FFEBC4" : cd.it.color + (cd.face ? "D8" : "70");
+      x.lineWidth = cd.on ? 2.6 : 1.4; poly([cd.p[0], cd.p[1]]); x.stroke();
+      if (cd.on && !RM){
+        const tp = (performance.now()/1300 + cd.it.kb/9e5) % 1;
+        const hx = cd.p[0].x + (cd.p[3].x-cd.p[0].x)*tp, hy = cd.p[0].y + (cd.p[3].y-cd.p[0].y)*tp;
+        const g = x.createRadialGradient(hx,hy,0,hx,hy,17);
+        g.addColorStop(0,"rgba(255,236,196,.95)"); g.addColorStop(1,"rgba(240,169,59,0)");
+        x.fillStyle = g; x.beginPath(); x.arc(hx,hy,17,0,6.2832); x.fill();
+      }
+    }
+
+    // 4b) 液下体积：画在卡片之上，浸没关系才对
+    if (yLine != null && occAnim > .004){
+      const band = front(yLine, R, 56).concat(fBot.slice().reverse());
+      const bg = x.createLinearGradient(0, C - HH*0.2, 0, C + HH);
+      bg.addColorStop(0, "rgba(255,209,124,.58)");
+      bg.addColorStop(.5,"rgba(206,132,58,.56)");
+      bg.addColorStop(1, "rgba(120,80,34,.62)");
+      x.fillStyle = bg; poly(band, true); x.fill();
+    }
+
+    // 5) 液面：整块圆盘面 + 亮边 + 读数（画在卡片之上）
+    if (yLine != null && occAnim > .004){
+      const disc = [];
+      for (let i=0;i<=96;i++){ const a = i/96*6.2832; disc.push(pt(a, yLine, R - 2)); }
+      const dg = x.createLinearGradient(0, C + (yLine+R*0.10), 0, C + (yLine-R*0.10));
+      dg.addColorStop(0, "rgba(255,214,140,.62)");
+      dg.addColorStop(1, "rgba(226,152,74,.52)");
+      x.fillStyle = dg; poly(disc, true); x.fill();
+      const line = front(yLine, R - 2, 56);
+      x.strokeStyle = "rgba(0,0,0,.5)"; x.lineWidth = 6; poly(line); x.stroke();
+      x.strokeStyle = "rgba(255,232,186,.98)"; x.lineWidth = 2.8; poly(line); x.stroke();
+      const mid = line[Math.floor(line.length*0.5)];
+      if (!RM){
+        const hg = x.createRadialGradient(mid.x,mid.y,0,mid.x,mid.y,86);
+        hg.addColorStop(0,"rgba(255,214,140,.30)"); hg.addColorStop(1,"rgba(240,169,59,0)");
+        x.fillStyle = hg; x.beginPath(); x.arc(mid.x,mid.y,86,0,6.2832); x.fill();
+      }
+      const lp = line[Math.floor(line.length*0.78)];
+      const label = `液位 ${Math.round(occAnim*100)}%`;
+      x.font = "600 24px ui-monospace,SFMono-Regular,Menlo,monospace";
+      const tw = x.measureText(label).width;
+      x.fillStyle = "rgba(8,7,5,.72)";
+      x.beginPath(); x.roundRect ? x.roundRect(lp.x - tw - 18, lp.y - 44, tw + 20, 32, 3) : x.rect(lp.x - tw - 18, lp.y - 44, tw + 20, 32);
+      x.fill();
+      x.fillStyle = "rgba(255,232,186,.97)"; x.textAlign = "left";
+      x.fillText(label, lp.x - tw - 8, lp.y - 21);
+    }
+
+    // 6) 上下鼓口 + 左右轮廓（这三笔把圆柱读出来）
+    x.strokeStyle = "rgba(246,234,212,.42)"; x.lineWidth = 2.4; poly(front(yTop, R, 56)); x.stroke();
+    x.strokeStyle = "rgba(246,234,212,.30)"; x.lineWidth = 2.4; poly(fTop.concat(fBot.slice().reverse()), true); x.stroke();
+    const s1 = pt(aL, yTop, R), s2 = pt(aL, yBot, R), s3 = pt(aR, yTop, R), s4 = pt(aR, yBot, R);
+    x.strokeStyle = "rgba(246,234,212,.42)"; x.lineWidth = 2.2;
+    poly([s1,s2]); x.stroke(); poly([s3,s4]); x.stroke();
+
+    // 7) 上口刻度 + 未占用那样一圈青弧
     for (let i=0;i<=40;i++){
-      const a = a0 + 6.2832*(i/40), big = i%10 === 0, r1 = rOut - (big?26:16), r2 = rOut - 12;
-      x.strokeStyle = big ? "rgba(244,231,207,.30)" : "rgba(244,231,207,.13)";
-      x.lineWidth = big ? 2 : 1;
-      x.beginPath();
-      x.moveTo(C+Math.cos(a)*r1, C+Math.sin(a)*r1);
-      x.lineTo(C+Math.cos(a)*r2, C+Math.sin(a)*r2); x.stroke();
+      const a = i/40*6.2832, r1 = R + 2, r2 = R + (i%10===0 ? 20 : 11);
+      x.strokeStyle = i%10===0 ? "rgba(246,234,212,.38)" : "rgba(246,234,212,.16)";
+      x.lineWidth = i%10===0 ? 1.9 : 1;
+      poly([pt(a,yTop,r1), pt(a,yTop,r2)]); x.stroke();
     }
-    x.save(); x.translate(C,C);
-    if (SPEC.length){
-      const max = Math.max.apply(null, SPEC.map(i => i.kb).concat([1]));
-      const step = 6.2832/SPEC.length;
-      SPEC.forEach((it, idx) => {
-        const a = -Math.PI/2 + idx*step;
-        const len = 26 + 150*(Math.log(1+it.kb)/Math.log(1+max));
-        x.strokeStyle = it.on ? "#F3C169" : it.color + "8C";
-        x.lineWidth = it.on ? 3.4 : 1.6;
-        x.beginPath();
-        x.moveTo(Math.cos(a)*96, Math.sin(a)*96);
-        x.lineTo(Math.cos(a)*(96+len*anim), Math.sin(a)*(96+len*anim)); x.stroke();
-      });
-    } else {
-      x.strokeStyle = "rgba(244,231,207,.10)"; x.lineWidth = 1.4;
-      x.beginPath(); x.arc(0,0,150,0,6.2832); x.stroke();
-    }
-    x.strokeStyle = "rgba(244,231,207,.12)"; x.lineWidth = 1.5;
-    x.beginPath(); x.arc(0,0,96,0,6.2832); x.stroke();
+
+    // 8) 扫描：绕鼓转的雷达条
     if (PHASE === "scanning"){
-      sweep += .06; const a = sweep % 6.2832;
-      const sg = x.createRadialGradient(Math.cos(a)*rIn,Math.sin(a)*rIn,0,Math.cos(a)*rIn,Math.sin(a)*rIn,rOut);
-      sg.addColorStop(0,"rgba(232,163,61,0)"); sg.addColorStop(1,"rgba(232,163,61,.85)");
-      x.strokeStyle = sg; x.lineWidth = 14; x.lineCap = "round";
-      x.beginPath(); x.arc(0,0,(rOut+rIn)/2, a, a+.5); x.stroke();
+      sweep += .032;
+      for (let e=0;e<6;e++){
+        const a = sweep - e*.055;
+        x.strokeStyle = `rgba(240,169,59,${.42 - e*.06})`;
+        x.lineWidth = e ? 2 : 3.6;
+        poly([pt(a, yTop-10, R+58), pt(a, yBot+10, R+58)]); x.stroke();
+      }
     }
-    x.restore();
-    anim += (1-anim)*.09;
-    if (target > occ) occ += (target-occ)*.06;
+
+    // 9) 中心暗纱：给读数让位（不是装饰）
+    const scrim = x.createRadialGradient(C, C, 30, C, C, R*0.72);
+    scrim.addColorStop(0, "rgba(8,7,5,.86)");
+    scrim.addColorStop(.62, "rgba(8,7,5,.46)");
+    scrim.addColorStop(1, "rgba(8,7,5,0)");
+    x.fillStyle = scrim; x.beginPath(); x.arc(C,C,R*0.72,0,6.2832); x.fill();
+
+    // 10) 除尘高潮
+    const vx = EXTRA.get("vortex");
+    if (vx && vx.length){
+      for (const v of vx){
+        if (v.life <= 0) continue;
+        const t = 1 - v.life, a = v.a + t*5.4, rad = R*(1-t) + 20;
+        const p = pt(a, v.y*(1-t), rad);
+        const al = Math.min(1, v.life*1.6)*.9;
+        const g = x.createRadialGradient(p.x,p.y,0,p.x,p.y,v.r*8*p.s);
+        g.addColorStop(0, `rgba(255,222,160,${al})`); g.addColorStop(1,"rgba(240,169,59,0)");
+        x.fillStyle = g; x.beginPath(); x.arc(p.x,p.y, v.r*8*p.s, 0, 6.2832); x.fill();
+      }
+    }
+    if (shock > 0){
+      const eased = 1 - shock;
+      x.strokeStyle = `rgba(255,203,115,${shock*.42})`; x.lineWidth = 1 + shock*3.2;
+      poly(front(yTop, R + eased*230, 56)); x.stroke();
+      poly(front(yBot, R + eased*230, 56)); x.stroke();
+    }
+    if (flash > 0){
+      const fg = x.createRadialGradient(C,C,0,C,C,R*1.5);
+      fg.addColorStop(0, `rgba(255,214,140,${flash*.30})`); fg.addColorStop(1,"rgba(240,169,59,0)");
+      x.fillStyle = fg; x.fillRect(0,0,S,S);
+    }
+
+    const now = performance.now();
+    const dt = lastT ? Math.min(0.1, (now - lastT)/1000) : 0.016;
+    lastT = now;
+    if (!dragging && !RM) spin += dt*0.09*auto;
+    const ease = k => 1 - Math.exp(-k*dt);        // 按时间收敛，帧率再低也会到位
+    grown += (1-grown)*ease(3.4);
+    occAnim += (occ - occAnim)*ease(3.6);
+    if (occTarget > occ) occ += (occTarget - occ)*ease(3.6);
+    flash *= Math.exp(-4.2*dt); shock *= Math.exp(-2.6*dt);
     if (!RM) requestAnimationFrame(draw);
   }
   draw();
+
+  let downX=0, downRot=0, downY=0, downRotX=0;
+  c.addEventListener("pointerdown", e => { dragging = true; downX=e.clientX; downRot=rotY; downY=e.clientY; downRotX=rotX; c.setPointerCapture(e.pointerId); });
+  c.addEventListener("pointermove", e => {
+    if (typeof e.clientX !== "number" || typeof e.clientY !== "number") return;
+    if (dragging){
+      rotY = downRot + (e.clientX-downX)*0.009;
+      rotX = Math.max(.12, Math.min(.72, downRotX - (e.clientY-downY)*0.005));
+      auto = 0;
+    } else {
+      const r = c.getBoundingClientRect();
+      const nx = (e.clientX-r.left)/r.width - .5, ny = (e.clientY-r.top)/r.height - .5;
+      rotY += (0.5 + nx*0.55 - rotY)*0.06;
+      rotX += (0.40 + ny*0.16 - rotX)*0.06;
+    }
+  });
+  c.addEventListener("pointerup", () => { dragging = false; setTimeout(() => { auto = 1; }, 700); });
+  c.addEventListener("pointerleave", () => { dragging = false; });
+
+  // 调试钩子：只在 ?debug=1 时存在，用来把动画状态钉死后截图核对（不影响正常使用）
+  if (new URLSearchParams(location.search).has("debug")){
+    window.__drum = {
+      force(p){ occ = occAnim = occTarget = p; grown = 1; spin = 0.5; draw(); return { occ, occAnim, occTarget, grown }; },
+      state(){ return { occ, occAnim, occTarget, rotY, rotX, spin }; },
+      frame(){ draw(); }
+    };
+  }
   return {
-    set(pct){ target = Math.max(0, Math.min(1, pct/100)); },
-    spec(list){ SPEC = list; }
+    set(pct){ occTarget = Math.max(0, Math.min(1, pct/100)); },
+    spec(list){ SPEC = list; },
+    consume(paths){ paths.forEach(p => CONSUMED.add(p)); },
+    eat(paths){
+      const v = [], mKB = maxKB();
+      ITEMS.filter(i => paths.includes(i.path)).slice(0, 40).forEach(it => {
+        const i = ITEMS.indexOf(it);
+        const a = i*(6.2832/Math.max(1, ITEMS.length)) + spin;
+        const h = cardH(it.kb, mKB);
+        const count = 14 + Math.round(34*Math.min(1, (it.size_kb||0)/1.5e6));
+        for (let q=0;q<count;q++)
+          v.push({ a, y:(Math.random()-.5)*h, r:1.4 + Math.random()*2.2, life:1, delay:Math.random()*.2 });
+      });
+      EXTRA.set("vortex", v);
+      return v;
+    },
+    pulse(){ flash = 1; shock = 1; },
+    reset(){ CONSUMED = new Set(); EXTRA.set("vortex", []); grown = 0; }
   };
 })();
 
-/* ---------- 清单 ---------- */
+/* ============================================================
+   清单
+   ============================================================ */
 const mark = (tier, size) => {
   const s = size || 11, c = (TIER[tier] || TIER.unknown).color;
   if (tier === "green") return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><path d="M1 5.4L4.3 9 11 1.6" stroke="${c}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
   if (tier === "yellow") return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><path d="M6 1.2l5 8.4H1z" stroke="${c}" stroke-width="1.4" stroke-linejoin="round"/><path d="M6 4.4v2.4" stroke="${c}" stroke-width="1.2" stroke-linecap="round"/></svg>`;
   return `<svg width="${s+1}" height="${s}" viewBox="0 0 12 11" fill="none"><circle cx="6" cy="5.5" r="4.3" stroke="${c}" stroke-width="1.3"/><path d="M6 3.4v2.6M6 7.9v.2" stroke="${c}" stroke-width="1.3" stroke-linecap="round"/></svg>`;
 };
+const broom = `<svg width="13" height="13" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M2.2 11.8l6.4-6.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8.2 1.6l4.2 4.2-1.6 1.6-4.2-4.2z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/><path d="M4.6 8.2l-2.4 3.2 3.2-2.4" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>`;
 function jevText(ai){
   const p = (ai.safe_to_delete == null) ? "?" : Math.round(ai.safe_to_delete*100)+"%";
   const rec = (ai.recoverability == null || ai.recoverability === "") ? "?" : ai.recoverability;
   const word = ai.tier === "green" ? "建议删" : (ai.tier === "red" ? "别删" : "拿不准");
   return `Jev ${word} · 可删 ${p} · 恢复性 ${rec}`;
 }
-function cardHTML(it, idx, maxKB, leadPct){
+function cardHTML(it, idx, maxKB_, leadPct){
   const t = TIER[it.tier] || TIER.unknown;
   const used = it.size_kb || 0;
-  const w = Math.max(1.6, 100*(Math.log(1+used)/Math.log(1+Math.max(maxKB,1))));
-  const on = SEL.has(it.path);
-  const tagAI = it.ai ? `<span class="tag" title="${jevText(it.ai)}">${mark(it.tier)}Jev</span>`
+  const w = Math.max(1.6, 100*(Math.log(1+used)/Math.log(1+Math.max(maxKB_,1))));
+  const on = SEL.has(it.path), seen = SEEN.has(it.path);
+  const tagAI = it.ai ? `<span class="tag" title="${esc(jevText(it.ai))}">${mark(it.tier)}Jev</span>`
                       : (it.tier !== "unknown" ? `<span class="tag">${mark("unknown")}未判断</span>` : "");
   const tagFix = it.selectable ? "" : `<span class="tag">${mark("yellow")}不可自动清理</span>`;
   const verdict = it.ai
-    ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}" title="${it.ai.advice ? it.ai.advice.replace(/"/g,"&quot;") : ""}">${jevText(it.ai)}</span>`
+    ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}" title="${esc(it.ai.advice || "")}">${esc(jevText(it.ai))}</span>`
     : `<span class="verdict mute">${it.selectable ? "可勾选" : "受保护"}</span>`;
-  return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${SEEN.has(it.path) ? "seen" : ""}" data-path="${it.path.replace(/"/g,"&quot;")}">
-    <input type="checkbox" class="pick-box" data-path="${it.path.replace(/"/g,"&quot;")}" ${on ? "checked" : ""} ${it.selectable ? "" : "disabled"} aria-label="${(it.name||it.path).replace(/"/g,"&quot;")}">
+  const p = esc(it.path), nm = esc(it.name || shortP(it.path).split("/").pop());
+  return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${seen ? "seen" : ""}" data-path="${p}">
+    <input type="checkbox" class="pick-box" data-path="${p}" ${on ? "checked" : ""} ${it.selectable ? "" : "disabled"} aria-label="${nm}">
     <span class="no" title="${t.name} · 按体量排序第 ${idx+1} 项">${String(idx+1).padStart(2,"0")}</span>
-    <span class="nm">${it.name || shortP(it.path).split("/").pop()}${tagFix}${tagAI}</span>
-    <span class="sz">${it.size}</span>
+    <span class="nm">${nm}${tagFix}${tagAI}</span>
+    <span class="sz">${esc(it.size)}</span>
     <span class="under">
       <span class="ruler" title="体量刻度（对数）"><i style="width:${w}%;background:${t.color}"></i><span class="lead" style="left:${leadPct}%"></span></span>
       ${verdict}
     </span>
-    <span class="path">${shortP(it.path)}</span>
-    ${it.note ? `<span class="note" title="${it.note.replace(/"/g,"&quot;")}">${it.note}</span>` : ""}
+    <span class="path">${esc(shortP(it.path))}</span>
+    ${it.note ? `<span class="note" title="${esc(it.note)}">${esc(it.note)}</span>` : ""}
+    ${it.selectable ? `<span class="card-actions"><button type="button" class="act" data-clean="${p}" title="只清这一项（移到废纸篓，可逆）">${broom}清理</button></span>` : ""}
+    <div class="rowconfirm" hidden>
+      <p>把 <b>${nm}</b>（${esc(it.size)}）移到废纸篓？<b>可逆</b>，之后能从废纸篓找回。</p>
+      <div class="act-row">
+        <button type="button" class="danger mini" data-yes="${p}">移入废纸篓</button>
+        <button type="button" class="ghost mini" data-no>取消</button>
+      </div>
+    </div>
   </label>`;
 }
 function renderDrawers(items){
   const wrap = $("drawers");
   if (!items.length){
+    $("vocab").hidden = true;
     wrap.innerHTML = `<div class="empty"><b style="color:var(--paper)">还没有体检记录。</b>
-      点「开始体检」跑一次只读扫描（1–3 分钟，期间电脑照常用），结果会按下面三格抽屉分好：
+      点「开始体检」跑一次只读扫描（1–3 分钟，期间电脑照常用），结果会按下面三格抽屉摊开：
       <div class="steps">
-        <div class="step"><span class="k">抽屉 1</span><span><b>可安全清理</b>：纯缓存 / 可再生，勾选后可以直接执行。</span></div>
+        <div class="step"><span class="k">抽屉 1</span><span><b>可安全清理</b>：纯缓存 / 可再生，勾选后可以直接清。</span></div>
         <div class="step"><span class="k">抽屉 2</span><span><b>需你判断</b>：含你的数据；只有标「可自动清理」的纯缓存子目录能勾。</span></div>
         <div class="step"><span class="k">抽屉 3</span><span><b>系统管控</b>：规则表认不出的目录，交给 AI 看一眼，仅供参考。</span></div>
       </div></div>`;
     return;
   }
-  const maxKB = Math.max.apply(null, items.map(i => i.size_kb || 0).concat([1]));
-  const leadPct = Math.min(99, 100*(Math.log(1+102400)/Math.log(1+maxKB)));
   $("vocab").hidden = false;
+  const maxKB_ = Math.max.apply(null, items.map(i => i.size_kb || 0).concat([1]));
+  const leadPct = Math.min(99, 100*(Math.log(1+102400)/Math.log(1+maxKB_)));
   wrap.innerHTML = ["green","yellow","unknown"].map(tier => {
     const list = items.filter(i => i.tier === tier);
     if (!list.length) return "";
     const t = TIER[tier], total = list.reduce((s,i) => s+(i.size_kb||0), 0);
     const selList = list.filter(i => SEL.has(i.path));
     const selKB = selList.reduce((s,i) => s+(i.size_kb||0), 0);
-    const hint = tier === "green" ? "勾选后可直接执行"
-              : tier === "yellow" ? "只有标「可自动清理」的纯缓存子目录能勾，其余请按提示进对应 App 处理"
+    const hint = tier === "green" ? "勾选后可直接清，也可以点每条的「清理」只清那一项"
+              : tier === "yellow" ? "只有标「可自动清理」的纯缓存子目录能清，其余请按提示进对应 App 处理"
               : "AI 判断仅供参考，不能自动清理";
     return `<div class="drawer">
-      <div class="drawer-head">
+      <div class="drawer-tab">
         <span class="tier">${mark(tier,13)}${t.name}</span>
         <span class="drawer-meta">${list.length} 项 · ${kb(total)} · 刻度线＝100 MB${selList.length ? ` · 已选 ${selList.length} 项 ${kb(selKB)}` : ""}</span>
         <span class="drawer-hint">${hint} · ${t.hint}</span>
       </div>
       <div class="drawer-body" data-scroll="${list.length > 9 ? 1 : 0}">
-        ${list.map((it,i) => cardHTML(it, i, maxKB, leadPct)).join("")}
+        ${list.map((it,i) => cardHTML(it, i, maxKB_, leadPct)).join("")}
       </div>
       ${list.length > 9 ? `<button class="mini ghost expand" data-n="${list.length}">展开全部 ${list.length} 项</button>` : ""}
     </div>`;
   }).join("");
+  wireRows();
+}
+function wireRows(){
+  const wrap = $("drawers");
   wrap.querySelectorAll("button.expand").forEach(b => {
     b.addEventListener("click", () => {
       const body = b.previousElementSibling;
@@ -605,37 +885,59 @@ function renderDrawers(items){
       updateSel(); paintSpec();
     });
   });
+  wrap.querySelectorAll("button.act[data-clean]").forEach(b => {
+    b.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      const card = b.closest(".card");
+      wrap.querySelectorAll(".rowconfirm").forEach(r => { if (r !== card.querySelector(".rowconfirm")) r.hidden = true; });
+      const rc = card.querySelector(".rowconfirm");
+      rc.hidden = !rc.hidden;
+      if (!rc.hidden) rc.querySelector("[data-yes]").focus();
+    });
+  });
+  wrap.querySelectorAll("[data-no]").forEach(b => {
+    b.addEventListener("click", e => { e.preventDefault(); b.closest(".rowconfirm").hidden = true; });
+  });
+  wrap.querySelectorAll("[data-yes]").forEach(b => {
+    b.addEventListener("click", async e => {
+      e.preventDefault(); e.stopPropagation();
+      const path = b.dataset.yes;
+      b.closest(".rowconfirm").hidden = true;
+      await runClean([path], `清理这一项`);
+    });
+  });
 }
 function updateSel(){
   let n = 0, sum = 0, cap = 0;
   ITEMS.forEach(i => { if (i.selectable) cap++; if (SEL.has(i.path)) { n++; sum += i.size_kb || 0; } });
   $("selCount").innerHTML = `已选 <b>${n}</b> / ${cap} 项 · ${kb(sum)}`;
-  $("relSize").textContent = kb(sum);
-  $("btnPreview").textContent = `预览选中的 ${n} 项`;
-  $("btnPreview").disabled = !n;
+  $("btnCleanSel").textContent = `清理选中的 ${n} 项${n ? `（${kb(sum)}）` : ""}`;
+  $("btnCleanSel").disabled = !n;
+  $("btnApply").textContent = `清理选中的 ${n} 项（${kb(sum)}）`;
   $("btnApply").disabled = !n;
-}
-let FREE_SHOWN = null;
-function tickFree(gb){            // 可用空间跳格：从旧值数到新值，而不是啪一下换掉
-  const el = $("freeNum");
-  const from = FREE_SHOWN == null ? gb : FREE_SHOWN;
-  if (gb === from){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
-  FREE_SHOWN = gb;
-  if (RM){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
-  const t0 = performance.now(), dur = Math.min(1200, 260 + Math.abs(gb-from)*40);
-  (function step(now){
-    const k = Math.min(1, (now-t0)/dur), e = 1-Math.pow(1-k, 3);
-    const v = (from + (gb-from)*e).toFixed(1);
-    el.innerHTML = `${v}<small>GB 可用</small>`;
-    if (k < 1) requestAnimationFrame(step);
-  })(t0);
+  $("btnPreview").disabled = !n;
+  $("btnPreview2").disabled = !n;
 }
 function paintSpec(){
-  ring.spec(ITEMS.map(i => ({ kb:i.size_kb || 0, on:SEL.has(i.path), color:(TIER[i.tier] || TIER.unknown).color })));
+  drum.spec(ITEMS.map(i => ({ kb:i.size_kb || 0, on:SEL.has(i.path), color:(TIER[i.tier] || TIER.unknown).color, path:i.path })));
 }
 function rerender(){ renderDrawers(ITEMS); paintSpec(); updateSel(); }
 
-/* ---------- 同步 ---------- */
+/* ---------- 可用空间跳格 ---------- */
+let FREE_SHOWN = null;
+function tickFree(gb){
+  const el = $("freeNum");
+  if (FREE_SHOWN == null || gb === FREE_SHOWN || RM){ FREE_SHOWN = gb; el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  const from = FREE_SHOWN, t0 = performance.now(), dur = Math.min(1500, 420 + Math.abs(gb-from)*60);
+  FREE_SHOWN = gb;
+  (function step(now){
+    const k = Math.min(1, (now-t0)/dur), e = 1 - Math.pow(1-k, 3);
+    el.innerHTML = `${(from + (gb-from)*e).toFixed(1)}<small>GB 可用</small>`;
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
+
+/* ---------- 与引擎同步 ---------- */
 async function refresh(){
   const s = await api("/api/state");
   if (s.phase === undefined) return;
@@ -644,10 +946,9 @@ async function refresh(){
   if (d.free_gb != null){
     tickFree(d.free_gb);
     $("factUsed").textContent = `${d.used_gb} / ${d.total_gb} GB`;
-    $("factPct").textContent = `${d.pct}%`;
-    $("capPct").textContent = `${d.pct}%`;
     $("factMount").textContent = d.mount || "—";
-    ring.set(d.pct);
+    $("drumSub").textContent = `占用率 ${d.pct}% · 拖动可以转动这只鼓`;
+    drum.set(d.pct);
   }
   const scanning = PHASE === "scanning", judging = PHASE === "judging", busy = scanning || judging || PHASE === "cleaning";
   $("btnScan").disabled = busy;
@@ -658,10 +959,9 @@ async function refresh(){
   if (s.error) say("err", s.error);
   else if (scanning) say("warn", "正在只读扫描（1–3 分钟，期间可继续用电脑）…");
   else if (PHASE === "idle" && s.notice) say("", s.notice);
-  else if (!$("out").hidden) { /* 保留上一次的输出，不覆盖 */ }
   if (s.scan_at) $("stamp").textContent = `上次体检 ${s.scan_at}` + (s.scan_seconds ? ` · 用时 ${s.scan_seconds}s` : "");
   const j = s.judged || {};
-  if (j.count != null) $("aiStatus").innerHTML = `已配置 key · 上次判断 ${j.count} 项（${j.model || ""}）`;
+  if (j.count != null) $("aiStatus").innerHTML = `已配置 key · 上次判断 ${j.count} 项（${esc(j.model || "")}）`;
 
   if (Array.isArray(s.items)){
     const sig = s.items.map(i => i.path + (i.ai ? "1" : "0")).join("|");
@@ -670,11 +970,102 @@ async function refresh(){
       ITEMS = s.items;
       if (!TOUCHED) SEL = new Set(ITEMS.filter(i => i.selectable).map(i => i.path));
       const green = ITEMS.filter(i => i.tier === "green").reduce((a,i) => a+(i.size_kb||0), 0);
-      $("factCand").textContent = `${ITEMS.filter(i => i.selectable).length} 项可勾 · ${kb(green)}`;
+      $("factCand").textContent = `${ITEMS.filter(i=>i.selectable).length} 项可勾 · ${kb(green)}`;
       rerender();
     }
   } else { paintSpec(); }
 }
+
+/* ============================================================
+   签名动作：卡片升起 → 散成灯下尘埃 → 螺旋吸入档案鼓 → 冲击波 + 跳格
+   ============================================================ */
+function sparkFrom(card, color, n){
+  const v = [], r = card.getBoundingClientRect(), k = Math.min(2, devicePixelRatio || 1);
+  for (let i=0;i<n;i++){
+    v.push({ x:(r.left + Math.random()*r.width), y:(r.top + Math.random()*r.height),
+             vx:(Math.random()-.5)*2.4, vy:(Math.random()-.5)*2.4, life:1, r:.8 + Math.random()*1.7, color });
+  }
+  return v;
+}
+async function runClean(paths, label){
+  const cards = paths.map(p => document.querySelector(`.card[data-path="${CSS.escape(p)}"]`)).filter(Boolean);
+  const vx = drum.eat(paths);
+  let sparks = [];
+  if (!RM){
+    cards.forEach(c => { c.classList.add("releasing"); sparks = sparks.concat(sparkFrom(c, "#FFCB73", 22)); });
+    drum.pulse();
+  }
+  // 粒子：卡片炸开 + 鼓上的漩涡
+  if (!RM){
+    const c = $("atmos"), x = c.getContext("2d");
+    const k = Math.min(2, devicePixelRatio || 1), W = c.width, H = c.height;
+    const drumRect = $("drum").getBoundingClientRect();
+    const cx = (drumRect.left + drumRect.width/2)*k, cy = (drumRect.top + drumRect.height/2)*k;
+    const t0 = performance.now();
+    let vlife = 1;
+    (function frame(now){
+      const e = Math.min(1, (now - t0)/1500);
+      vlife = Math.max(0, 1 - Math.pow(e, 1.6));
+      x.clearRect(0,0,W,H);
+      for (const s of sparks){
+        const dx = cx - s.x*k, dy = cy - s.y*k, dd = Math.hypot(dx,dy) || 1;
+        s.vx += (dx/dd)*.75; s.vy += (dy/dd)*.75;
+        s.vx *= .92; s.vy *= .92;
+        const ox = s.x*k + s.vx, oy = s.y*k + s.vy;
+        s.x = ox/k; s.y = oy/k; s.life -= .012;
+        if (s.life <= 0) continue;
+        const g = x.createRadialGradient(ox,oy,0,ox,oy,s.r*7*k);
+        g.addColorStop(0, `rgba(255,214,140,${s.life*.85})`); g.addColorStop(1,"rgba(240,169,59,0)");
+        x.fillStyle = g; x.beginPath(); x.arc(ox,oy,s.r*7*k,0,6.2832); x.fill();
+      }
+      if (e < 1) requestAnimationFrame(frame);
+    })(t0);
+    // 鼓内漩涡
+    (function vortex(){
+      const list = vx.filter(v => v.life > 0);
+      let alive = 0;
+      for (const v of list){
+        if (v.delay > 0){ v.delay -= .033; continue; }
+        v.life -= .016; if (v.life > 0) alive++;
+      }
+      if (alive && vlife > 0) requestAnimationFrame(vortex);
+    })();
+  }
+  logLine(`${label}：${paths.length} 项 → 废纸篓`, "w");
+  const r = await api("/api/clean", {mode:"apply", confirm:"确认清理", paths});
+  $("out").hidden = false; $("out").textContent = r.output || JSON.stringify(r);
+  const d = (r.free_after_gb != null && r.free_before_gb != null)
+    ? `可用空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB。` : "";
+  if (r.ok){
+    paths.forEach(p => SEEN.add(p));
+    say("ok", `已移入废纸篓（可逆）。${d}想真正释放空间，再走到「清空废纸篓」那一步。`);
+    logLine(`完成：${paths.length} 项 · ${d}`, "g");
+  } else {
+    say("err", "清理有问题：" + d + (r.error || ""));
+    logLine("清理失败：" + (r.error || ""), "e");
+  }
+  TOUCHED = false; SIG = "";
+  setTimeout(() => { drum.reset(); }, RM ? 0 : 1400);
+  await refresh();
+}
+
+/* ---------- 批量确认闸门 ---------- */
+function openSheet(){
+  const paths = Array.from(SEL);
+  if (!paths.length) return say("err", "没勾选任何项");
+  const items = ITEMS.filter(i => SEL.has(i.path));
+  const sum = items.reduce((s,i) => s+(i.size_kb||0), 0);
+  const cap = items.filter(i => i.tier === "green").reduce((s,i) => s+(i.size_kb||0), 0);
+  $("sheetTitle").textContent = `清理选中的 ${items.length} 项？`;
+  $("sheetMeta").innerHTML = `合计 <b>${kb(sum)}</b> · 其中「可安全清理」${kb(cap)} · 全部移入废纸篓（<b>可逆</b>），
+    Mac 里的空间要等清空废纸篓之后才真正回收。`;
+  $("sheetList").innerHTML = items.slice(0,6).map(i =>
+    `<li><span>${esc(i.name || shortP(i.path).split("/").pop())}</span><span>${esc(i.size)}</span></li>`).join("")
+    + (items.length > 6 ? `<li><span>还有 ${items.length-6} 项…</span><span></span></li>` : "");
+  $("sheet").hidden = false;
+  $("sheetGo").focus();
+}
+const closeSheet = () => { $("sheet").hidden = true; };
 
 /* ---------- 交互 ---------- */
 $("btnScan").onclick = async () => {
@@ -709,6 +1100,32 @@ $("btnInvert").onclick = () => {
   ITEMS.forEach(i => { if (i.selectable && !SEL.has(i.path)) inv.add(i.path); });
   SEL = inv; rerender();
 };
+const doPreview = async () => {
+  const paths = Array.from(SEL);
+  if (!paths.length) return say("err", "没勾选任何项");
+  $("out").hidden = false; $("out").textContent = "预览生成中…";
+  const r = await api("/api/clean", {mode:"preview", paths});
+  $("out").textContent = r.output || JSON.stringify(r);
+  say(r.ok ? "ok" : "err", r.ok ? `以上是预览（勾选 ${paths.length} 项），什么都没删。` : (r.error || "预览失败"));
+  logLine(`预览 ${paths.length} 项`, r.ok ? "g" : "e");
+};
+$("btnPreview").onclick = doPreview;
+$("btnPreview2").onclick = doPreview;
+$("btnCleanSel").onclick = openSheet;
+$("btnApply").onclick = openSheet;
+$("sheetNo").onclick = closeSheet;
+$("sheetGo").onclick = async () => { closeSheet(); await runClean(Array.from(SEL), "批量清理"); };
+$("sheet").addEventListener("click", e => { if (e.target === $("sheet")) closeSheet(); });
+$("btnTrash").onclick = async () => {
+  const t = $("trashText").value.trim();
+  if (t !== "清空废纸篓") return say("err", "这是不可逆的一步，请在框里打出：清空废纸篓");
+  say("warn", "正在清空废纸篓…");
+  const r = await api("/api/trash", {confirm:t});
+  say(r.ok ? "ok" : "err", r.ok ? `废纸篓已清空，当前可用 ${r.free_gb} GB。` : (r.error || "清空失败（可能弹了 Finder 授权窗）"));
+  $("trashText").value = "";
+  logLine(r.ok ? `废纸篓已清空，可用 ${r.free_gb} GB` : "清空废纸篓失败", r.ok ? "g" : "e");
+  refresh();
+};
 $("btnSaveKey").onclick = async () => {
   const k = $("keyInput").value.trim();
   if (!k) return say("err", "key 不能为空");
@@ -731,45 +1148,8 @@ $("btnJudge").onclick = async () => {
     TOUCHED = false; SIG = ""; refresh();
   } else {
     $("out").textContent = r.output || r.error || "失败";
-    say("err", r.error || "AI 判断失败");
-    logLine("AI 判断失败：" + (r.error || ""), "e");
+    say("err", r.error || "AI 判断失败"); logLine("AI 判断失败：" + (r.error || ""), "e");
   }
-};
-$("btnPreview").onclick = async () => {
-  const paths = Array.from(SEL);
-  if (!paths.length) return say("err", "没勾选任何项");
-  $("out").hidden = false; $("out").textContent = "预览生成中…";
-  const r = await api("/api/clean", {mode:"preview", paths});
-  $("out").textContent = r.output || JSON.stringify(r);
-  say(r.ok ? "ok" : "err", r.ok ? `以上是预览（勾选 ${paths.length} 项），什么都没删。` : (r.error || "预览失败"));
-  logLine(`预览 ${paths.length} 项`, r.ok ? "g" : "e");
-};
-$("btnApply").onclick = async () => {
-  const paths = Array.from(SEL);
-  if (!paths.length) return say("err", "没勾选任何项");
-  const t = $("confirmText").value.trim();
-  if (t !== "确认清理") return say("err", "请先在输入框里打出：确认清理");
-  burst(paths);
-  $("out").hidden = false; $("out").textContent = "执行中…";
-  const r = await api("/api/clean", {mode:"apply", confirm:t, paths});
-  $("out").textContent = r.output || JSON.stringify(r);
-  const d = (r.free_after_gb != null && r.free_before_gb != null)
-    ? `可用空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB。` : "";
-  say(r.ok ? "ok" : "err", (r.ok ? "已移入废纸篓（可逆）。" : "清理有问题：") + d + (r.ok ? " 想真正释放空间，再清空废纸篓。" : ""));
-  if (r.ok) paths.forEach(p => SEEN.add(p));
-  $("confirmText").value = "";
-  logLine(`${r.ok ? "清理完成" : "清理失败"}：${paths.length} 项`, r.ok ? "g" : "e");
-  TOUCHED = false; SIG = ""; refresh();
-};
-$("btnTrash").onclick = async () => {
-  const t = $("trashText").value.trim();
-  if (t !== "清空废纸篓") return say("err", "请先在输入框里打出：清空废纸篓");
-  say("warn", "正在清空废纸篓…");
-  const r = await api("/api/trash", {confirm:t});
-  say(r.ok ? "ok" : "err", r.ok ? `废纸篓已清空，当前可用 ${r.free_gb} GB。` : (r.error || "清空失败（可能弹了 Finder 授权窗）"));
-  $("trashText").value = "";
-  logLine(r.ok ? `废纸篓已清空，可用 ${r.free_gb} GB` : "清空废纸篓失败", r.ok ? "g" : "e");
-  refresh();
 };
 $("btnQuit").onclick = async () => {
   await api("/api/quit", {});
@@ -778,60 +1158,15 @@ $("btnQuit").onclick = async () => {
      <p style="color:var(--paper-dim);margin:0">要再打开，双击 ~/Applications 里的「Mac 清理助手」。</p></div>`;
 };
 document.addEventListener("keydown", e => {
-  if (e.key === "Escape") hideNotice();
-  if (SEEN.size && (e.key === "Enter" || e.key === " " || e.key === "Escape")){
-    SEEN.clear();
-    document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
+  if (e.key === "Escape"){ closeSheet(); document.querySelectorAll(".rowconfirm").forEach(r => r.hidden = true); }
+  if (SEEN.size && (e.key === "Enter" || e.key === " ")){
+    SEEN.clear(); document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
   }
 });
 
-/* ---------- 签名动作：卡片升起，散成灯下尘埃流向磁盘环 ---------- */
-function burst(paths){
-  if (RM) return;
-  const c = $("dust"), x = c.getContext("2d");
-  const W = c.width, H = c.height, k = devicePixelRatio || 1;
-  // 尘埃要真的落进磁盘环：拿环的实时位置（并夹在当前视口内，滚到执行台也看得到）
-  const ringEl = document.querySelector(".dial .face") || document.getElementById("ring");
-  const rr = ringEl.getBoundingClientRect();
-  let cx = (rr.left + rr.width/2)*k, cy = (rr.top + rr.height/2)*k;
-  cx = Math.max(60*k, Math.min(W-60*k, cx));
-  cy = Math.max(80*k, Math.min(H-80*k, cy));
-  const parts = [];
-  paths.slice(0, 24).forEach(p => {
-    const card = document.querySelector(`.card[data-path="${CSS.escape(p)}"]`);
-    if (!card) return;
-    const r = card.getBoundingClientRect();
-    for (let i=0;i<24;i++){
-      parts.push({ x:(r.left + Math.random()*r.width)*k, y:(r.top + Math.random()*r.height)*k,
-                   vx:(Math.random()-.5)*2.2*k, vy:(Math.random()-.5)*2.2*k, life:1,
-                   r:(.7 + Math.random()*1.9)*k });
-    }
-    card.style.transition = "transform .5s cubic-bezier(.16,.84,.24,1), opacity .5s";
-    card.style.transform = "translate(7px,-14px)"; card.style.opacity = ".38";
-  });
-  if (!parts.length) return;
-  (function step(){
-    x.clearRect(0,0,W,H);
-    let alive = 0;
-    for (const p of parts){
-      if (p.life <= 0) continue;
-      alive++;
-      const dx = cx-p.x, dy = cy-p.y, d = Math.hypot(dx,dy) || 1;
-      p.vx += (dx/d)*.55; p.vy += (dy/d)*.55;
-      p.vx *= .93; p.vy *= .93;
-      p.x += p.vx; p.y += p.vy; p.life -= .012;
-      const a = Math.max(0, p.life)*.7;
-      const g = x.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*7);
-      g.addColorStop(0, `rgba(243,193,105,${a})`); g.addColorStop(1, "rgba(232,163,61,0)");
-      x.fillStyle = g; x.beginPath(); x.arc(p.x,p.y,p.r*7,0,6.2832); x.fill();
-    }
-    if (alive) requestAnimationFrame(step);
-  })();
-}
-
 /* ---------- 启动 ---------- */
 (async function boot(){
-  logLine("界面已就绪 · 档案抽屉", "g");
+  logLine("界面已就绪 · 档案鼓", "g");
   const t = await api("/api/typesafe");
   if (t && t.configured) $("aiStatus").innerHTML = `已配置 key（${t.source === "env" ? "环境变量" : "~/.config/typesafe/key"}）`;
   else {
