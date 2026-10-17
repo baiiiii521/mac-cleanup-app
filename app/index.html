@@ -32,7 +32,7 @@ body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
 body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.5;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E")}
 #dust{position:fixed;inset:0;z-index:1;pointer-events:none}
-.shell{position:relative;z-index:2;max-width:1460px;margin:0 auto;padding:30px 34px 64px}
+.shell{position:relative;z-index:2;max-width:1460px;margin:0 auto;padding:34px 52px 64px}
 
 /* ---------- 报头 ---------- */
 .masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:28px;flex-wrap:wrap;
@@ -62,8 +62,9 @@ h1{margin:0;font-size:31px;font-weight:600;letter-spacing:-.028em;line-height:1.
 .dial-legend{display:flex;justify-content:center;gap:16px;margin-top:4px;flex-wrap:wrap}
 .dial-legend span{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--paper-faint);letter-spacing:.05em}
 .dot{width:8px;height:8px;border-radius:50%;flex:none}
-.facts{margin:20px 0 0;border-top:1px solid var(--line);padding-top:14px;display:grid;gap:9px}
-.fact{display:flex;justify-content:space-between;gap:16px;font-size:12.5px}
+.facts{margin:20px 0 0;border-top:1px solid var(--line);padding-top:10px;display:grid;gap:0}
+.fact{display:flex;justify-content:space-between;gap:16px;font-size:12.5px;padding:7px 0;border-top:1px solid rgba(244,231,207,.07)}
+.fact:first-child{border-top:none;padding-top:0}
 .fact dt{color:var(--paper-faint);letter-spacing:.04em}
 .fact dd{margin:0;font-family:var(--mono);font-size:12.5px;color:var(--paper-dim)}
 .stamp{margin-top:16px;font-family:var(--mono);font-size:11.5px;color:var(--paper-faint);letter-spacing:.04em}
@@ -87,7 +88,10 @@ button.ghost:hover:not(:disabled){background:rgba(244,231,207,.04)}
 input[type=text],input[type=password]{font:inherit;font-family:var(--mono);font-size:13px;color:var(--paper);
   background:rgba(0,0,0,.42);border:1px solid var(--line-2);border-radius:var(--radius);padding:9px 12px;min-width:0}
 input::placeholder{color:var(--paper-faint)}
-input[type=text]:focus,input[type=password]:focus{border-color:rgba(232,163,61,.5)}
+input[type=text]:focus,input[type=password]:focus{border-color:rgba(232,163,61,.5);background:rgba(0,0,0,.55)}
+input{caret-color:var(--lamp)}
+.gate-tip{font-size:12.5px;color:var(--paper-faint);white-space:nowrap}
+.gate-tip b{color:var(--paper-dim);font-weight:600}
 ::selection{background:rgba(232,163,61,.3);color:#FFF6E4}
 .rail{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .rail + .rail{margin-top:12px}
@@ -108,7 +112,8 @@ input[type=text]:focus,input[type=password]:focus{border-color:rgba(232,163,61,.
 .tier svg{flex:none}
 .drawer-meta{font-family:var(--mono);font-size:12px;color:var(--paper-faint);letter-spacing:.03em}
 .drawer-hint{flex:1 1 260px;font-size:12px;color:var(--paper-faint);text-align:right}
-.drawer-body{margin-top:11px;display:grid;gap:7px;max-height:var(--cap,2000px);overflow-y:auto;padding-right:3px}
+.drawer-body{margin-top:11px;display:grid;gap:7px;max-height:var(--cap,2000px);overflow-y:auto;padding-right:3px;
+  transition:max-height .42s cubic-bezier(.16,.84,.24,1)}
 .drawer-body[data-scroll="1"]{--cap:376px}
 .drawer-body.full{--cap:6000px}
 button.expand{margin-top:9px;align-self:flex-start}
@@ -128,6 +133,9 @@ button.expand{margin-top:9px;align-self:flex-start}
   background:linear-gradient(180deg,#2A2114,#1D1710);box-shadow:var(--shadow-lift)}
 .card.fixed{background:linear-gradient(180deg,#181410,#141110)}
 .card.seen{background:linear-gradient(180deg,#2A2013,#1C1610);border-color:rgba(232,163,61,.3)}
+.card.seen::after{content:"已退役";position:absolute;right:14px;top:50%;transform:translateY(-50%) rotate(-7deg);
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;color:var(--lamp);opacity:.5;
+  border:1px solid rgba(232,163,61,.45);border-radius:2px;padding:1px 6px;pointer-events:none}
 .pick-box{appearance:none;-webkit-appearance:none;width:17px;height:17px;margin:0;border:1px solid var(--line-2);
   border-radius:2px;background:rgba(0,0,0,.45);cursor:pointer;position:relative;transition:border-color .16s,background .16s}
 .pick-box:hover{border-color:rgba(232,163,61,.6)}
@@ -137,10 +145,10 @@ button.expand{margin-top:9px;align-self:flex-start}
 .pick-box:disabled{cursor:default;opacity:.42}
 .card.seen .pick-box:checked{animation:settle .5s cubic-bezier(.16,.84,.24,1)}
 @keyframes settle{0%{transform:scale(1.5)}60%{transform:scale(.94)}100%{transform:scale(1)}}
-.no{font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:var(--paper-faint)}
+.no{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--paper-faint)}
 .card.on .no{color:var(--lamp)}
 .nm{min-width:0;font-size:14.5px;font-weight:600;letter-spacing:-.005em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tag{display:inline-flex;align-items:center;gap:5px;margin-left:9px;font-family:var(--mono);font-size:10.5px;
+.tag{display:inline-flex;align-items:center;gap:5px;margin-left:9px;font-family:var(--mono);font-size:12px;
   letter-spacing:.05em;color:var(--paper-faint);vertical-align:1px;font-weight:400}
 .tag svg{flex:none}
 .sz{font-family:var(--mono);font-size:13px;color:var(--paper-dim);white-space:nowrap;text-align:right}
@@ -151,10 +159,10 @@ button.expand{margin-top:9px;align-self:flex-start}
 .ruler i::after{content:"";position:absolute;inset:0;opacity:.85;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='6' height='6'%3E%3Cpath d='M0 6L6 0' stroke='%23000' stroke-opacity='.45' stroke-width='1.4'/%3E%3C/svg%3E")}
 .ruler .lead{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(244,231,207,.32)}
-.verdict{font-family:var(--mono);font-size:11.5px;color:var(--cyan);white-space:nowrap;letter-spacing:.02em}
+.verdict{font-family:var(--mono);font-size:12.5px;color:var(--paper-dim);white-space:nowrap;letter-spacing:.02em}
 .verdict.neg{color:var(--clay)}
 .verdict.mute{color:var(--paper-faint)}
-.path{grid-column:1/-1;font-family:var(--mono);font-size:11.5px;color:#B8A78C;
+.path{grid-column:1/-1;font-family:var(--mono);font-size:12.5px;color:#B8A78C;
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .note{grid-column:1/-1;font-size:12.5px;color:var(--paper-dim);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card.fixed .nm{color:var(--paper-dim)}
@@ -175,7 +183,7 @@ button.expand{margin-top:9px;align-self:flex-start}
 .release b{color:var(--lamp);font-weight:600}
 .notice{margin:14px 0 0;padding:11px 13px;border-radius:var(--radius);font-size:13px;white-space:pre-wrap;
   border:1px solid var(--line-2);background:rgba(0,0,0,.34);color:var(--paper-dim)}
-.notice.ok{border-color:rgba(127,209,196,.36);color:#B9E6DC}
+.notice.ok{border-color:rgba(244,231,207,.30);color:#E6D8BE}
 .notice.err{border-color:rgba(224,85,44,.44);color:#F3BCA9}
 .notice.warn{border-color:rgba(232,163,61,.44);color:#F0D19A}
 .notice[hidden]{display:none}
@@ -205,7 +213,7 @@ label.inline{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;col
 .log div{display:grid;grid-template-columns:78px 1fr;gap:12px;border-top:1px solid rgba(244,231,207,.055);padding:3px 0}
 .log div:first-child{border-top:none}
 .log time{color:var(--paper-faint)}
-.log .e{color:#F3BCA9}.log .g{color:#B9E6DC}.log .w{color:#F0D19A}
+.log .e{color:#F3BCA9}.log .g{color:#E6D8BE}.log .w{color:#F0D19A}
 .log::-webkit-scrollbar{width:9px}
 .log::-webkit-scrollbar-thumb{background:rgba(244,231,207,.16);border-radius:5px}
 
@@ -215,6 +223,8 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
 
 @media (max-width:1080px){
   .shell{padding:24px 20px 52px}
+  .nm,.note{white-space:normal;overflow:visible;text-overflow:clip}
+  .path{white-space:normal;word-break:break-all}
   h1{font-size:26px}
   .drawer-hint{text-align:left;flex:1 1 100%}
 }
@@ -316,16 +326,19 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
         <p class="sub">第 1 步预览（什么都不删）→ 第 2 步打出确认语才执行 → 第 3 步清空废纸篓，空间才真正回来。</p>
         <div class="gate-lines">
           <div class="gate-line">
+            <span class="gate-tip">第 1 步 · 先看一眼</span>
             <button id="btnPreview" disabled>预览选中的 0 项</button>
             <span class="release">预计释放 <b id="relSize">0 KB</b></span>
           </div>
           <div class="gate-line">
-            <input type="text" id="confirmText" placeholder="在此打出：确认清理" style="width:170px" autocomplete="off" aria-label="确认文本">
+            <span class="gate-tip">第 2 步 · 在此打出 <b>确认清理</b>：</span>
+            <input type="text" id="confirmText" placeholder="确认清理" style="width:150px" autocomplete="off" aria-label="确认文本">
             <button class="danger" id="btnApply" disabled>执行清理（移到废纸篓）</button>
             <span class="count" style="margin:0;flex:none">可逆，随时能从废纸篓找回</span>
           </div>
           <div class="gate-line">
-            <input type="text" id="trashText" placeholder="在此打出：清空废纸篓" style="width:170px" autocomplete="off" aria-label="清空废纸篓确认文本">
+            <span class="gate-tip">第 3 步 · 在此打出 <b>清空废纸篓</b>：</span>
+            <input type="text" id="trashText" placeholder="清空废纸篓" style="width:150px" autocomplete="off" aria-label="清空废纸篓确认文本">
             <button class="danger" id="btnTrash">清空废纸篓</button>
             <span class="count" style="margin:0;flex:none">这一步不可逆，才真正释放空间</span>
           </div>
@@ -521,11 +534,12 @@ function cardHTML(it, idx, maxKB, leadPct){
   const used = it.size_kb || 0;
   const w = Math.max(1.6, 100*(Math.log(1+used)/Math.log(1+Math.max(maxKB,1))));
   const on = SEL.has(it.path);
-  const tagAI = it.ai ? `<span class="tag" title="Jev 判断：类别 ${it.ai.category_label||it.ai.category||"?"} · 可删概率 ${(it.ai.safe_to_delete==null?"?":Math.round(it.ai.safe_to_delete*100)+"%")} · 恢复性 0–3（越高越容易恢复）${it.ai.advice ? " · " + it.ai.advice : ""}">${mark(it.tier)}${jevText(it.ai)}</span>`
+  const tagAI = it.ai ? `<span class="tag" title="${jevText(it.ai)}">${mark(it.tier)}Jev</span>`
                       : (it.tier !== "unknown" ? `<span class="tag">${mark("unknown")}未判断</span>` : "");
   const tagFix = it.selectable ? "" : `<span class="tag">${mark("yellow")}不可自动清理</span>`;
-  const verdict = it.ai ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}">${it.ai.category_label || it.ai.category || "已判断"}</span>`
-                        : `<span class="verdict mute">${it.selectable ? "可勾选" : "受保护"}</span>`;
+  const verdict = it.ai
+    ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}" title="${it.ai.advice ? it.ai.advice.replace(/"/g,"&quot;") : ""}">${jevText(it.ai)}</span>`
+    : `<span class="verdict mute">${it.selectable ? "可勾选" : "受保护"}</span>`;
   return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${SEEN.has(it.path) ? "seen" : ""}" data-path="${it.path.replace(/"/g,"&quot;")}">
     <input type="checkbox" class="pick-box" data-path="${it.path.replace(/"/g,"&quot;")}" ${on ? "checked" : ""} ${it.selectable ? "" : "disabled"} aria-label="${(it.name||it.path).replace(/"/g,"&quot;")}">
     <span class="no" title="${t.name} · 按体量排序第 ${idx+1} 项">${String(idx+1).padStart(2,"0")}</span>
@@ -601,6 +615,21 @@ function updateSel(){
   $("btnPreview").disabled = !n;
   $("btnApply").disabled = !n;
 }
+let FREE_SHOWN = null;
+function tickFree(gb){            // 可用空间跳格：从旧值数到新值，而不是啪一下换掉
+  const el = $("freeNum");
+  const from = FREE_SHOWN == null ? gb : FREE_SHOWN;
+  if (gb === from){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  FREE_SHOWN = gb;
+  if (RM){ el.innerHTML = `${gb}<small>GB 可用</small>`; return; }
+  const t0 = performance.now(), dur = Math.min(1200, 260 + Math.abs(gb-from)*40);
+  (function step(now){
+    const k = Math.min(1, (now-t0)/dur), e = 1-Math.pow(1-k, 3);
+    const v = (from + (gb-from)*e).toFixed(1);
+    el.innerHTML = `${v}<small>GB 可用</small>`;
+    if (k < 1) requestAnimationFrame(step);
+  })(t0);
+}
 function paintSpec(){
   ring.spec(ITEMS.map(i => ({ kb:i.size_kb || 0, on:SEL.has(i.path), color:(TIER[i.tier] || TIER.unknown).color })));
 }
@@ -613,7 +642,7 @@ async function refresh(){
   PHASE = s.phase; ELAPSED = s.elapsed || 0;
   const d = s.disk || {};
   if (d.free_gb != null){
-    $("freeNum").innerHTML = `${d.free_gb}<small>GB 可用</small>`;
+    tickFree(d.free_gb);
     $("factUsed").textContent = `${d.used_gb} / ${d.total_gb} GB`;
     $("factPct").textContent = `${d.pct}%`;
     $("capPct").textContent = `${d.pct}%`;
@@ -760,7 +789,13 @@ document.addEventListener("keydown", e => {
 function burst(paths){
   if (RM) return;
   const c = $("dust"), x = c.getContext("2d");
-  const W = c.width, H = c.height, cx = W*0.19, cy = H*0.34, k = devicePixelRatio || 1;
+  const W = c.width, H = c.height, k = devicePixelRatio || 1;
+  // 尘埃要真的落进磁盘环：拿环的实时位置（并夹在当前视口内，滚到执行台也看得到）
+  const ringEl = document.querySelector(".dial .face") || document.getElementById("ring");
+  const rr = ringEl.getBoundingClientRect();
+  let cx = (rr.left + rr.width/2)*k, cy = (rr.top + rr.height/2)*k;
+  cx = Math.max(60*k, Math.min(W-60*k, cx));
+  cy = Math.max(80*k, Math.min(H-80*k, cy));
   const parts = [];
   paths.slice(0, 24).forEach(p => {
     const card = document.querySelector(`.card[data-path="${CSS.escape(p)}"]`);
