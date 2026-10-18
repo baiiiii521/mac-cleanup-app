@@ -200,6 +200,18 @@ button.act{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;paddi
 .card:hover button.act,.card:focus-within button.act,button.act:focus-visible{opacity:1}
 button.act:hover{transform:translateY(-2px) scale(1.03);border-color:rgba(255,203,115,.7);background:linear-gradient(180deg,#362917,#231C11)}
 .card.releasing button.act,.card.seen button.act{display:none}
+.card.err-receipt{border-color:rgba(228,87,46,.45);background:linear-gradient(178deg,#22110D,#17100D 70%)}
+.card-receipt{grid-column:1/-1;margin-top:7px;padding:9px 12px;border-radius:var(--radius);
+  font-size:12.5px;line-height:1.55;display:grid;gap:3px;animation:sheetIn .32s var(--spring)}
+.card-receipt.ok{background:rgba(240,169,59,.08);border:1px solid rgba(240,169,59,.3);color:var(--paper-dim)}
+.card-receipt.err{background:rgba(228,87,46,.10);border:1px solid rgba(228,87,46,.38);color:#F5C0AD}
+.rcpt-row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.rcpt-badge{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.card-receipt.ok .rcpt-badge{color:var(--lamp-hi)}
+.card-receipt.err .rcpt-badge{color:#FFCDBD}
+.rcpt-delta{font-family:var(--mono);font-size:12px;color:var(--paper-dim)}
+.rcpt-delta b{color:var(--paper);font-weight:600}
+.rcpt-hint{font-size:11.8px;color:var(--paper-faint)}
 .rowconfirm{grid-column:1/-1;margin-top:9px;padding:11px 13px;border:1px solid rgba(240,169,59,.4);border-radius:var(--radius);
   background:linear-gradient(180deg,#2B2113,#1A150D);display:grid;gap:10px;animation:sheetIn .3s var(--spring)}
 .rowconfirm p{margin:0;font-size:12.8px;color:var(--paper-dim);line-height:1.6}
@@ -295,26 +307,32 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
   .drum-wrap{max-width:392px}
   .free{font-size:48px}
   .drawer-hint{text-align:left;flex:1 1 100%}
-  .nm,.note{white-space:normal;overflow:visible;text-overflow:clip}
-  .path{white-space:normal;word-break:break-all}
+  .nm,.note{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere;word-break:break-all}
+  .path{white-space:normal;overflow-wrap:anywhere;word-break:break-all}
   button.act{opacity:1}
 }
 @media (max-width:560px){
   .stage{gap:22px}
   /* 手机上按钮要换行，吸顶条会挡住列表 → 首屏已经有控件了，这里就不吸顶 */
   .actbar .rail:first-of-type{position:static;background:none;padding:0}
-  .card{grid-template-columns:20px 40px minmax(0,1fr);padding:11px 12px}
+  .card{grid-template-columns:22px 38px minmax(0,1fr);padding:11px 12px}
+  .pick-box{width:22px;height:22px;position:relative}
+  .pick-box::before{content:"";position:absolute;inset:-11px;pointer-events:auto}
   .sz{grid-column:3;text-align:left}
   .card-actions{grid-column:3;justify-content:flex-start}
   .free{font-size:40px}
   .rail{gap:7px}
   button{min-height:44px;padding:12px 15px;font-size:13.5px}
-  button.mini{min-height:40px;padding:10px 13px}
+  button.mini{min-height:44px;padding:10px 14px}
+  button.act{min-height:44px;min-width:44px;padding:10px 14px;font-size:13px}
   input[type=text],input[type=password]{min-height:44px;width:100% !important}
+  #btnTrash{min-height:44px;width:100%}
+  .gate-line{display:flex;flex-direction:column;align-items:stretch;gap:10px}
   pre.out{max-height:44vh}
-  .gate-line{gap:8px}
   .count{margin-left:0;width:100%}
   .sheet{padding:0 12px 18px}
+  .sheet-act button{min-height:44px;padding:12px 18px}
+  .rowconfirm .act-row button{min-height:44px;padding:10px 15px}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.001ms !important;transition-duration:.001ms !important}
@@ -347,10 +365,10 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
   <div class="stage">
     <!-- 档案鼓 -->
     <section class="instrument" aria-label="磁盘">
-      <div class="drum-wrap">
-        <canvas id="drum" width="904" height="904" aria-label="磁盘占用与清单体量的立体视图"
+      <div class="drum-wrap" role="img" id="drumWrap" aria-label="磁盘状态读取中…">
+        <canvas id="drum" width="904" height="904" aria-hidden="true"
                 title="拖动可以转动这只鼓"></canvas>
-        <div class="drum-read">
+        <div class="drum-read" aria-hidden="true">
           <div class="free" id="freeNum">—<small>GB 可写入</small></div>
         </div>
       </div>
@@ -478,7 +496,7 @@ footer code{font-family:var(--mono);color:var(--paper-dim)}
 const $ = id => document.getElementById(id);
 const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-let ITEMS = [], SEL = new Set(), TOUCHED = false, PHASE = "idle", ELAPSED = 0, SEEN = new Set(), SIG = "";
+let ITEMS = [], SEL = new Set(), TOUCHED = false, PHASE = "idle", ELAPSED = 0, SEEN = new Set(), RECEIPTS = new Map(), SIG = "";
 const TIER = {
   green:  { name:"可安全清理", color:"#F0A93B", prefix:"G", hint:"纯缓存 / 可再生" },
   yellow: { name:"需你判断",   color:"#C4755C", prefix:"Y", hint:"含你的数据" },
@@ -551,11 +569,25 @@ function logLine(text, cls){
    ============================================================ */
 const drum = (function(){
   const c = $("drum"), x = c.getContext("2d");
+  const BASE_S = 452;
   const S = 904, C = S/2;
   const R = 244, HH = 224, F = 1430;
   let rotY = 0.5, rotX = 0.40, spin = 0, auto = 1, dragging = false;
   let occ = 0, occTarget = 0, occAnim = 0, sweep = 0, flash = 0, shock = 0, grown = 0, lastT = 0, started = false, occSetAt = 0;
   let SPEC = [], CONSUMED = new Set(), EXTRA = new Map();
+
+  function syncResolution(){
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const targetW = Math.round(BASE_S * dpr);
+    if (c.width !== targetW || c.height !== targetW){
+      c.width = targetW;
+      c.height = targetW;
+    }
+    const scale = targetW / S;
+    x.setTransform(scale, 0, 0, scale, 0, 0);
+  }
+  syncResolution();
+  window.addEventListener("resize", syncResolution, { passive: true });
 
   function project(p){
     const cy = Math.cos(rotY), sy = Math.sin(rotY);
@@ -573,6 +605,7 @@ const drum = (function(){
   function draw(){
     if (!isFinite(rotY) || !isFinite(rotX)){ rotY = 0.5; rotX = 0.40; }   // 姿态兜底
     if (RM){ occ = occTarget; occAnim = occAnim = occTarget; grown = 1; }  // RM：不要缓动，立刻画真值
+    syncResolution();
     x.clearRect(0,0,S,S);
     const n = SPEC.length || 1, step = 6.2832/n, mKB = maxKB();
     const yTop = -HH, yBot = HH;
@@ -777,8 +810,36 @@ const drum = (function(){
   if (new URLSearchParams(location.search).has("debug")){
     window.__drum = {
       force(p){ occ = occAnim = occTarget = p; grown = 1; spin = 0.5; draw(); return { occ, occAnim, occTarget, grown }; },
-      state(){ return { occ, occAnim, occTarget, rotY, rotX, spin }; },
-      frame(){ draw(); }
+      state(){ return { occ, occAnim, occTarget, rotY, rotX, spin, dpr: Math.min(2, window.devicePixelRatio || 1) }; },
+      frame(){ draw(); },
+      bench(durationMs = 3000){
+        return new Promise(resolve => {
+          const frames = [];
+          const start = performance.now();
+          let prev = start;
+          function tick(now){
+            const dt = now - prev;
+            prev = now;
+            frames.push(dt);
+            rotY += 0.025;
+            draw();
+            if (now - start < durationMs){
+              requestAnimationFrame(tick);
+            } else {
+              const avgDt = frames.reduce((a,b)=>a+b,0) / frames.length;
+              const fps = 1000 / avgDt;
+              resolve({
+                count: frames.length,
+                avgDtMs: Number(avgDt.toFixed(2)),
+                fps: Number(fps.toFixed(1)),
+                minDtMs: Number(Math.min(...frames).toFixed(2)),
+                maxDtMs: Number(Math.max(...frames).toFixed(2))
+              });
+            }
+          }
+          requestAnimationFrame(tick);
+        });
+      }
     };
   }
   // RM（减弱动态效果）时没有自转循环，所以每次状态变化都要自己补一帧重画，
@@ -836,6 +897,29 @@ function cardHTML(it, idx, maxKB_, leadPct){
   const used = it.size_kb || 0;
   const w = Math.max(1.6, 100*(Math.log(1+used)/Math.log(1+Math.max(maxKB_,1))));
   const on = SEL.has(it.path), seen = SEEN.has(it.path);
+  const rcpt = RECEIPTS.get(it.path);
+  const isOk = rcpt && rcpt.ok && seen;
+  const isErr = rcpt && !rcpt.ok;
+  let receiptHTML = "";
+  if (isOk){
+    const dStr = (rcpt.before != null && rcpt.after != null)
+      ? `<span class="rcpt-delta">可写入 <b>${rcpt.before} GB</b> → <b>${rcpt.after} GB</b></span>` : "";
+    receiptHTML = `<div class="card-receipt ok" role="status">
+      <div class="rcpt-row">
+        <span class="rcpt-badge">${mark("green", 11)}已移入废纸篓（共 ${rcpt.count} 项）</span>
+        ${dStr}
+      </div>
+      <div class="rcpt-hint">要真正释放空间请清空废纸篓</div>
+    </div>`;
+  } else if (isErr){
+    receiptHTML = `<div class="card-receipt err" role="alert">
+      <div class="rcpt-row">
+        <span class="rcpt-badge">${mark("yellow", 11)}清理未执行</span>
+        <span class="rcpt-delta">${esc(rcpt.error || "服务端拒绝")}</span>
+      </div>
+      <div class="rcpt-hint">未发生任何删除，原文件安全保留</div>
+    </div>`;
+  }
   const tagAI = it.ai ? `<span class="tag" title="${esc(jevText(it.ai))}">${mark(it.tier)}Jev</span>`
                       : (it.tier !== "unknown" ? `<span class="tag" title="还没让 AI 看过这一项">${markNeutral()}未判断</span>` : "");
   const tagFix = it.selectable ? "" : `<span class="tag">${mark("yellow")}不可自动清理</span>`;
@@ -843,7 +927,7 @@ function cardHTML(it, idx, maxKB_, leadPct){
     ? `<span class="verdict ${it.ai.tier === "red" ? "neg" : ""}" title="${esc(it.ai.advice || "")}">${esc(jevText(it.ai))}</span>`
     : `<span class="verdict mute">${it.selectable ? "可勾选" : "受保护"}</span>`;
   const p = esc(it.path), nm = esc(it.name || shortP(it.path).split("/").pop());
-  return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${seen ? "seen" : ""}" data-path="${p}">
+  return `<label class="card ${it.selectable ? "pick" : "fixed"} ${on ? "on" : ""} ${isOk ? "seen" : ""} ${isErr ? "err-receipt" : ""}" data-path="${p}">
     <input type="checkbox" class="pick-box" data-path="${p}" ${on ? "checked" : ""} ${it.selectable ? "" : "disabled"} aria-label="${nm}">
     <span class="no" title="${t.name} · 按体量排序第 ${idx+1} 项">${String(idx+1).padStart(2,"0")}</span>
     <span class="nm">${nm}${tagFix}${tagAI}</span>
@@ -862,6 +946,7 @@ function cardHTML(it, idx, maxKB_, leadPct){
         <button type="button" class="ghost mini" data-no>取消</button>
       </div>
     </div>
+    ${receiptHTML}
   </label>`;
 }
 function renderDrawers(items){
@@ -991,6 +1076,14 @@ async function refresh(){
     $("drumSub").textContent = `占用率 ${d.pct}% · 拖动可以转动这只鼓`;
     drum.set(d.pct);
   }
+  const itms = Array.isArray(s.items) ? s.items : ITEMS;
+  const cand = itms.filter(i => i.selectable);
+  const candKb = cand.reduce((a, i) => a + (i.size_kb || 0), 0);
+  const drumWrap = $("drumWrap");
+  if (drumWrap){
+    drumWrap.setAttribute("aria-label",
+      `磁盘已用 ${d.pct != null ? d.pct + "%" : "—"}、可写入 ${d.free_gb != null ? d.free_gb + " GB" : "—"}；清单 ${itms.length} 项，其中 ${cand.length} 项可清理 ${kb(candKb)}`);
+  }
   const scanning = PHASE === "scanning", judging = PHASE === "judging", busy = scanning || judging || PHASE === "cleaning";
   $("btnScan").disabled = busy;
   $("btnScan").textContent = scanning ? `扫描中 ${Math.round(ELAPSED)}s` : "开始体检";
@@ -1079,14 +1172,23 @@ async function runClean(paths, label){
   const r = await api("/api/clean", {mode:"apply", confirm:"确认清理", paths});
   $("out").hidden = false; $("out").textContent = r.output || JSON.stringify(r);
   const d = (r.free_after_gb != null && r.free_before_gb != null)
-    ? `可用空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB。` : "";
+    ? `可写入空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB` : "";
   if (r.ok){
-    paths.forEach(p => SEEN.add(p));
-    say("ok", `已移入废纸篓（可逆）。${d}想真正释放空间，再走到「清空废纸篓」那一步。`);
-    logLine(`完成：${paths.length} 项 · ${d}`, "g");
+    const cnt = r.selected || paths.length;
+    paths.forEach(p => {
+      RECEIPTS.set(p, { ok: true, count: cnt, before: r.free_before_gb, after: r.free_after_gb });
+      SEEN.add(p);
+    });
+    say("ok", `已移入废纸篓（共 ${cnt} 项）。${d ? d + "。" : ""}要真正释放空间请清空废纸篓。`);
+    logLine(`完成：${cnt} 项 · ${d}`, "g");
   } else {
-    say("err", "清理有问题：" + d + (r.error || ""));
-    logLine("清理失败：" + (r.error || ""), "e");
+    const err = r.error || "清理未完成";
+    paths.forEach(p => {
+      RECEIPTS.set(p, { ok: false, error: err });
+      SEEN.delete(p);
+    });
+    say("err", `清理失败：${err}。未做任何删除。`);
+    logLine(`清理失败：${err}`, "e");
   }
   TOUCHED = false; SIG = "";
   setTimeout(() => { drum.reset(); }, RM ? 0 : 1400);
@@ -1217,7 +1319,9 @@ $("btnQuit").onclick = async () => {
 };
 function clearSeen(){
   SEEN.clear();
-  document.querySelectorAll(".card.seen").forEach(c => c.classList.remove("seen"));
+  RECEIPTS.clear();
+  document.querySelectorAll(".card.seen, .card.err-receipt").forEach(c => c.classList.remove("seen", "err-receipt"));
+  document.querySelectorAll(".card-receipt").forEach(el => el.remove());
 }
 document.addEventListener("keydown", e => {
   if (e.key === "Escape"){
@@ -1228,7 +1332,7 @@ document.addEventListener("keydown", e => {
 });
 // 退役章亮到"你确实看见为止"：点一下别处就消，但不抢正在操作的控件
 document.addEventListener("pointerdown", e => {
-  if (!SEEN.size) return;
+  if (!SEEN.size && !RECEIPTS.size) return;
   if (e.target.closest(".rowconfirm, .act, button, input, label, summary, .card")) return;
   clearSeen();
 });
