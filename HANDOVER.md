@@ -223,5 +223,12 @@ Jev key：`~/.config/typesafe/key`（或环境变量 `TYPESAFE_API_KEY`）
    - 更新 `README.md` 与 `HANDOVER.md` 中的说明与构建命令；
    - 新增验证工具：`tools/test-cdp.js`（Node 纯内置模块 CDP）、`tools/snap.js`（整页与特写截取）、`tools/verify-interaction.js`（交互与网络载荷拦截测试）；
    - 全套验证通过：`--selftest` 10/10、`impeccable detect` 0 条违规、`node --check` 语法体检通过。
+7. **P6 垃圾清理精准度专项增强（已完成）**：
+   - **孤儿误报清零**：将已安装 App 识别范围从仅 `/Applications` 与 `~/Applications` 扩展到 `/System/Applications`、`/System/Applications/Utilities`、`/System/Library/CoreServices/Applications` 等系统应用全域（识别应用数从 29 个跃升至 231 个）；在 `Group Containers` 扫描中自动剥离 10 位 Team ID（如 `243LU875E5.groups.`），成功消除 `com.apple.podcasts` 等系统内置组件被误判为孤儿残留的假阳性；增加正在运行进程检测（活跃中的应用绝不报孤儿）。
+   - **iCloud Drive 误删漏洞彻底修复**：修复 `clean.py` 中绕过 `build_model` 直接循环 `scan['installers']` 导致 iCloud 安装包被强制打入绿灯的严重漏洞。统一以 `report.build_model()` 为唯一真理来源，iCloud Drive 安装包严格归为黄灯警示，默认清理绝不触碰。
+   - **现代开发环境与产物支持**：`LOCK_FILES` 增加 `bun.lockb`, `bun.lock`, `pubspec.lock`, `Podfile.lock`, `flake.lock`，彻底解决 Bun/Flutter/iOS 项目构建产物误判为「无锁文件无法安全重建」的问题；`ARTIFACT_NAMES` 补充 `.svelte-kit`, `.astro`, `.docusaurus`, `.output`, `.dart_tool`, `.gradle` 等现代框架产物。
+   - **残留安装包动态拦截**：过滤正在下载中的文件（`.download`, `.crdownload`, `.part`, `.tmp`）、当前挂载使用中的 DMG（`hdiutil info`）以及 2 小时内新下载的文件（避免将刚下载待安装的镜像误当作垃圾）。
+   - **纯缓存与黄灯安全子路径扩展**：`GREEN_RULES` 新增 Bun 全局缓存、CocoaPods 依赖下载缓存、Go 编译缓存、Playwright 浏览器缓存、Xcode 测试缓存、CloudKit 临时缓存等；`YELLOW_SAFE_SUFFIXES` 增补 Chromium/Electron 的 `ShaderCache`, `DawnCache`, `Crashpad`, `blob_storage` 等纯渲染/崩溃缓存。
+   - **非 Caches 敏感文件硬拒绝机制**：在 `clean.py` 的 `check()` 守卫中，对任何非 Caches 目录下的 `Cookies`, `IndexedDB`, `Local Storage`, `Session Storage`, `Preferences`, `Keychains`, `Accounts` 以及 `.db`/`.sqlite` 数据库文件实施强制硬拦截，彻底杜绝数据破坏风险。
 
 **别做的事（硬红线保持）**：清理规则只在技能脚本中；离线单文件零外部依赖；安全锁与确认模型不破；Operate 模式标准控件。
