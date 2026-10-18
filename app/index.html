@@ -1174,21 +1174,35 @@ async function runClean(paths, label){
   const d = (r.free_after_gb != null && r.free_before_gb != null)
     ? `可写入空间 ${r.free_before_gb} GB → ${r.free_after_gb} GB` : "";
   if (r.ok){
-    const cnt = r.selected || paths.length;
-    paths.forEach(p => {
+    // 只给「服务端确认真的处理掉」的那些行盖章 —— 不能按请求项数记账
+    const donePaths = Array.isArray(r.done_paths) ? r.done_paths : paths;
+    const cnt = (r.done != null) ? r.done : donePaths.length;
+    donePaths.forEach(p => {
       RECEIPTS.set(p, { ok: true, count: cnt, before: r.free_before_gb, after: r.free_after_gb });
       SEEN.add(p);
     });
-    say("ok", `已移入废纸篓（共 ${cnt} 项）。${d ? d + "。" : ""}要真正释放空间请清空废纸篓。`);
-    logLine(`完成：${cnt} 项 · ${d}`, "g");
+    const skipped = Array.isArray(r.skipped_items) ? r.skipped_items : [];
+    skipped.forEach(s => {
+      RECEIPTS.set(s.path, { ok: false, error: s.reason || "已被跳过" });
+      SEEN.delete(s.path);
+    });
+    const extra = (r.failed || r.skipped)
+      ? `（另有 ${[r.failed ? `${r.failed} 项失败` : "", skipped.length ? `${skipped.length} 项跳过` : ""].filter(Boolean).join("、")}，详见下方输出）`
+      : "";
+    say("ok", `已移入废纸篓 ${cnt} 项。${d ? d + "。" : ""}${extra}要真正释放空间请清空废纸篓。`);
+    logLine(`完成：${cnt} 项 · ${d}${extra}`, "g");
   } else {
+    // 失败/全跳过：一行都不许盖退役章，并且要说清「磁盘没变」
     const err = r.error || "清理未完成";
+    const skipped = Array.isArray(r.skipped_items) ? r.skipped_items : [];
+    const failed = Array.isArray(r.failed_items) ? r.failed_items : [];
     paths.forEach(p => {
-      RECEIPTS.set(p, { ok: false, error: err });
+      const hit = skipped.find(s => s.path === p) || failed.find(f => f.path === p);
+      RECEIPTS.set(p, { ok: false, error: hit ? hit.reason : err });
       SEEN.delete(p);
     });
-    say("err", `清理失败：${err}。未做任何删除。`);
-    logLine(`清理失败：${err}`, "e");
+    say("err", `清理未完成：${err}。磁盘没有发生变化，原文件安全保留。`);
+    logLine(`清理未完成：${err}`, "e");
   }
   TOUCHED = false; SIG = "";
   setTimeout(() => { drum.reset(); }, RM ? 0 : 1400);

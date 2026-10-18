@@ -20,18 +20,20 @@
 ```
 mac-cleanup-app/
 ├── app/
-│   ├── index.html          ★ 主界面（单文件、零第三方依赖、离线可用）——1194 行，改这里
+│   ├── index.html          ★ 主界面（单文件、零第三方依赖、离线可用）——1369 行，改这里
 │   ├── index-v2-archive.html  v2「档案抽屉」备份（对照用，不参与运行）
 │   ├── index-classic.html     最早的极简版界面（对照用）
-│   ├── server.py           ★ 清理引擎的本地服务（569 行）：HTTP 外壳 + 状态机 + 安全闸门
+│   ├── server.py           ★ 清理引擎的本地服务（602 行）：HTTP 外壳 + 状态机 + 安全闸门
+│   ├── skill-scripts/      ★★ 清理引擎（**唯一真理源，已纳入 git**）：scan/report/clean/judge
 │   ├── launch              网页版外壳的启动器（shell；把 server.py 丢后台后自己退出）
 │   └── Info.plist / AppIcon.png
 ├── native/
-│   ├── main.swift          ★ 原生 App（895 行）：窗口 + WKWebView + 引擎拉起/回收 + --selftest
+│   ├── main.swift          ★ 原生 App（922 行）：窗口 + WKWebView + 引擎拉起/回收 + --selftest
 │   ├── build_native.sh     ★ 构建并安装到 ~/Applications（swiftc，只需 CommandLineTools）
 │   └── Info.plist          （含 NSPrincipalClass / NSAllowsLocalNetworking）
 ├── build.sh                备用：把网页版外壳装成「Mac 清理助手（网页版）.app」
 ├── tools/make_icon.py      生成图标源图
+├── docs/mole-notes/        ★ 借鉴 mole 的规格笔记（protection.md / clean-rules.md）
 ├── PRODUCT.md              ★ 产品事实（用户、目的、约束、确认模型、安全锁）
 ├── DESIGN.md               ★ 视觉系统（地面/token/字体/材料/签名动作/组件/状态/无障碍）
 ├── README.md               面向使用者的说明（含"打不开怎么办"）
@@ -43,8 +45,16 @@ mac-cleanup-app/
     └── review/{desktop,mobile,drum-closeup,card-stamp}.png   评审截图（1440 / 390 / 鼓特写 / 单卡）
 ```
 
-**引擎规则只在一处**：`~/.hermes/skills/devops/macos-deep-optimize/scripts/{scan,report,clean,judge}.py`
-（`server.py` 通过 `MAC_CLEAN_SKILL` 找它，找不到才用 app 内自带的副本）。**不要把这些规则复制进 UI 或另写一份。**
+**引擎规则只在一处**：本仓库 **`app/skill-scripts/`**（已纳入 git，是唯一真理源）。
+运行时优先读技能目录 `~/.hermes/skills/devops/macos-deep-optimize/scripts/`
+（`MAC_CLEAN_SKILL` 可覆盖）；构建时 `native/build_native.sh` 会把
+`app/skill-scripts/*.py` 拷进 `.app/Contents/Resources/skill-scripts/` 作兜底。
+**改规则请改 `app/skill-scripts/`，然后同步到技能目录**（否则 App 跑的还是旧脚本）：
+
+```bash
+cp app/skill-scripts/{scan,report,clean,judge}.py \
+   ~/.hermes/skills/devops/macos-deep-optimize/scripts/
+```
 
 ---
 
@@ -68,7 +78,7 @@ mac-cleanup-app/
 | GET | `/api/items` | — | `{items[], judged}` |
 | POST | `/api/scan` | `{}` | 异步起扫描，立刻返回 `{ok:true,phase:"scanning"}` |
 | POST | `/api/report` | `{}` | `{ok,url:"/report.html"}`（生成完整 HTML 报告） |
-| POST | `/api/clean` | `{mode:"preview"\|"apply", confirm?, paths?[]}` | `{ok,output,selected,free_before_gb,free_after_gb}`。**`mode:"apply"` 必须 `confirm==="确认清理"`；`paths` 为空数组会被拒**；传 `paths` 时引擎写 `select.json` 并只做**交集**（不会越过白名单扩大范围） |
+| POST | `/api/clean` | `{mode:"preview"\|"apply", confirm?, paths?[]}` | `{ok,output,selected,free_before_gb,free_after_gb, done,would_do,failed,skipped, done_paths[],failed_items[],skipped_items[],freed_kb}`。**`mode:"apply"` 必须 `confirm==="确认清理"`；`paths` 为空数组会被拒**；传 `paths` 时引擎写 `select.json` 并只做**交集**（不会越过白名单扩大范围）。<br>**回执语义（P7 修）**：`done` 是**真正处理掉**的项数，不是请求项数；预览时 `done` 恒为 0、`would_do` 才是「若执行会动几项」；全被跳过时 `ok:false` 且 `clean.py` 退出码 2 |
 | POST | `/api/trash` | `{confirm:"清空废纸篓"}` | `{ok,output,free_gb}`（唯一不可逆动作，必须手打确认语） |
 | GET | `/api/whitelist` | — | `{output}` 保护名单 |
 | POST | `/api/whitelist` | `{action:"list"\|"add"\|"remove", path?}` | `{ok,output}` |
@@ -232,3 +242,81 @@ Jev key：`~/.config/typesafe/key`（或环境变量 `TYPESAFE_API_KEY`）
    - **非 Caches 敏感文件硬拒绝机制**：在 `clean.py` 的 `check()` 守卫中，对任何非 Caches 目录下的 `Cookies`, `IndexedDB`, `Local Storage`, `Session Storage`, `Preferences`, `Keychains`, `Accounts` 以及 `.db`/`.sqlite` 数据库文件实施强制硬拦截，彻底杜绝数据破坏风险。
 
 **别做的事（硬红线保持）**：清理规则只在技能脚本中；离线单文件零外部依赖；安全锁与确认模型不破；Operate 模式标准控件。
+
+---
+
+## 10. P7 · 缺陷修复 + 性能优化 + 借鉴 mole（2026-10-18 下午）
+
+### 10.1 修掉的 5 个既有缺陷
+
+| # | 缺陷 | 根因 | 修法 |
+|---|---|---|---|
+| 1 | **回执超额报告**：勾 1 项、实际删 0 项，界面仍写「已移入废纸篓（共 1 项）」 | `clean.py` 全部跳过也 `exit 0`；`/api/clean` 按退出码判 ok，`selected` 是**请求**项数不是**完成**项数 | `clean.py` 末尾输出 `__RECEIPT__ {json}`（done/failed/skipped/done_paths/freed_kb）；全跳过时 `exit 2`；`server.py` 解析回执；UI 只给 `done_paths` 里的行盖章 |
+| 2 | **预览被误读成「删了 N 项」** | 预览分支直接 `return`，没有回执，调用方只能靠退出码猜 | 预览也输出回执，且 `done` 恒为 0、`would_do` 才是「若执行会动几项」；server 对 `mode=="preview"` 单独处理 |
+| 3 | **文档漂移**：HANDOVER 写 1194/569/895 行，实际 1369/602/922；且声称仓库内有 `skill-scripts/` 兜底副本，实际没有 | 文档没跟着改；兜底副本只在构建产物里 | 全部行数改正；`app/skill-scripts/` **纳入 git 作为唯一真理源**，并写明同步命令 |
+| 4 | **孤儿检测子串匹配过宽**：进程名 `node` 会压掉 `com.foo.nodebar` 这类无关目录 | `if any(p in bid_lower for p in proc_names)` 是任意子串包含 | 改**整词 + 前缀变体**匹配（`_bid_tokens` / `_proc_tokens` / `_proc_owns_bid`），stopwords 剔除 node/code/helper 等通用词 |
+| 5 | **超大截图**：`mobile.png` 11300px、`mobile-operated.png` 12446px，超过读图工具 8192px 上限 | 整页截图未限制高度 | 等比压到 6000px 高（414×6000 / 376×6000），保持可读 |
+
+### 10.2 性能优化（扫描 86.7s → 53.2s，−39%）
+
+| 改动 | 效果 |
+|---|---|
+| `scan_dirs` 从「du_map 算总量 + 逐父目录再 du 算子项 + 单独 du 整个 `~/Library`」改为**每个目标目录只跑一次 `du -k -d 1`**，父子体积同时到手；`~/Library` 总量由子项求和 + 未覆盖条目补齐 | **69.4s → 11.1s（6.2×）** |
+| `installed_bundle_ids` / `launchservices_bundle_ids` 用 Python 内置 `plistlib` 取代逐 App 起 `PlistBuddy` 子进程（238 个 App 就是 238 次 fork/exec） | **3.6s → 0.28s（13×）** |
+| `du_map` 改多路并行（按 CPU 封顶 4–6 线程） | 大目录批量测量提速 |
+| `pkg_receipt_bundle_ids` 从「400 条收据逐条 `pkgutil --files`」改为只挑含 `.app` 的 40 条 + 6 秒总预算 + 进程内缓存 | **35.5s → 5.5s**，且改为按需启用（`MAC_CLEAN_PKG_RECEIPTS=1`），因为本机零收益 |
+| `scan_leftover_groups` 先用 `stat` 零成本预筛，只对「同一 App 至少 2 处痕迹」的组算体积 | **57.3s → 2.4s** |
+
+> BSD `du` 的坑：macOS 上 `-s` 与 `-d` **互斥**，正确写法是 `du -k -d 1 <path>`；写 `-sk -d 1` 会直接 usage 报错、零输出。
+
+### 10.3 借鉴 mole（https://github.com/tw93/mole，GPLv3）落地的机制
+
+调研笔记见 `docs/mole-notes/`：`protection.md`（保护规则/归属解析，1203 行）、`clean-rules.md`（可清理项规则，1028 行），每条都带 `文件:行号`。
+
+**安全性（最重要）**
+1. **修掉一条会真实损坏的规则**：`YELLOW_SAFE_SUFFIXES` 原先把 `/Service Worker/ScriptCache` 当可删。mole 在 `lib/clean/user.sh` 明确禁删（issue #785/#964/#968）——删掉 MV3 扩展字节码会破坏 extension service worker。**已移除**，并补上 `GrShaderCache`/`GraphiteDawnCache`/`component_crx_cache`/`Application Cache` 等真正的纯缓存叶子。
+2. **登录凭据/同步状态硬保护**（`PROTECTED_SEGMENTS`）：`~/.ssh`、`~/.gnupg`、`~/.aws`、`~/.kube`、`Library/Keychains`、`Library/Mobile Documents`、`Mail/Messages/Safari/Calendars`、`group.com.apple.notes` 等，删了要重新授权/同步。
+3. **备份/安全软件/虚拟机保护**（`PROTECTED_VENDOR_SEGMENTS`）：Time Machine、Backblaze、Arq、CCC、Dropbox/OneDrive、CrowdStrike/SentinelOne/Jamf、Docker/OrbStack/UTM/Parallels 等。**标注：这份清单是本仓库自有规则，比 mole 更保守**（mole 只有 EDR 前缀 + 352 条 bundle id，没有 Arq / Time Machine 的路径级规则）。
+4. **AI 模型缓存不自动删**（`PROTECTED_MODEL_CACHES`）：HuggingFace / torch / tensorflow / ollama / lmstudio 等，重新下载代价高、中断可能损坏；含 mole 的 `com.apple.e5rt.e5bundlecache`（Apple Neural Engine 已编译模型缓存，删了下次推理要重编）。
+5. **共享 XDG 根目录保护**（`SHARED_STATE_ROOTS`）：`~/.config`、`~/.local` 等根本身不删，但 `~/.config/zed` 这类 App 专属子目录仍可处理。
+6. **`to_trash` 结果校验**：Finder 静默失败时旧代码会把「没删掉」当「已移入废纸篓」；现在无论走 Finder 还是 `shutil.move` 兜底，都**必须确认源路径真的没了**，否则抛异常记失败。
+
+**准确性**
+7. **归属解析增强**：`installed_bundle_ids` 扩到 Caskroom / Setapp / Input Methods / `/Applications/Utilities` 并支持嵌套；新增 `launchservices_bundle_ids()`（mdfind 快路径，实测补 18 个此前漏掉的 bundle id，0.6s）；`pkg_receipt_bundle_ids()` 按需启用。
+8. **孤儿检测**：整词进程归属匹配（见 10.1 #4）+ 30 天闲置闸。
+9. **新增「已卸载 App 成套残留」**（`scan_leftover_groups`）：不再只按目录名猜孤儿，而是先确定「这个 App 不在了」，再按 App 名的多种命名变体（`Maestro Studio` / `maestro-studio` / `MaestroStudio`）成套收集其散落各处的数据。同一 App 至少 2 处痕迹才报，进黄灯、绝不自动清理。实测 4 组、2.4s。
+10. **构建产物项目根向上查找**（`find_project_root`）：修掉「monorepo 子目录产物找不到锁文件」的误判（`sunset-glow/web` 明明有 `package-lock.json` 却报 risk）。
+11. **活跃度判定改为「目录内有无近期文件」**（`dir_has_recent_activity`）：mole 的实测经验——目录 mtime 只在直接子项增删时更新，天天写 `sub/cache.db` 的目录 mtime 可能是半年前，只看 mtime 会误清。用 `find -mtime -N -print -quit`。
+12. **锁文件 14 → 26 种**：补 `npm-shrinkwrap.json`、`pdm.lock`、`requirements.txt`、`go.sum`、`gradle.lockfile`、`Package.resolved`、`Cartfile.resolved`、`mix.lock`、`stack.yaml.lock`、`elm.json` 等。
+13. **构建产物 23 → 57 种**：按生态补齐（Vite/Rollup/Webpack/Nx/Storybook/Angular、tox/nox/eggs/hypothesis、Swift Package/Pods/Carthage、Serverless/SAM、Go vendor、Elm/OCaml/Elixir/Haskell/Zig 等）。
+
+**科学性**
+14. **日志/崩溃报告改为按天保留**（`RETENTION_DAYS = 7`，与 mole 的 `MOLE_LOG_AGE_DAYS` 一致）：日志不是垃圾而是排障证据，只删 7 天前的，不再整目录清空。优先级：`retain` > `empty` > `remove`。
+15. **`GREEN_RULES` 18 → 35 条**，并**把具体规则排到通用 `/Library/Caches` 之前**（否则 Homebrew/CocoaPods 等会拿到泛化文案与错误命令）；补 Poetry/pyenv/conda/jupyter/ruff/mypy/NuGet/Ivy、Xcode DeviceSupport/模拟器缓存、DiagnosticReports 等。
+
+### 10.4 验证记录
+
+```bash
+# 语法
+for f in app/skill-scripts/*.py app/server.py; do python3 -c "import ast;ast.parse(open('$f').read())"; done   # 全过
+node --check /tmp/c.js                                                                                          # 过
+~/.hermes/skills/impeccable/scripts/impeccable detect --json app/index.html                                     # [] 0 违规
+
+# 引擎实测（2026-10-18）
+scan.py 全量扫描          → scan_seconds 53.2（改前 86.7）
+                          → children 25 · orphans 7 · leftover_groups 4 · artifacts 12 · installers 2
+clean.py 预览             → __RECEIPT__ {ok:true, would_do:1, done:0}       # 什么都没删
+clean.py apply（目标消失）→ __RECEIPT__ {ok:false, done:0, skipped:1} + exit 2  # 不再超额报告
+check() 敏感路径           → Claude/ZaloData/微信开发者工具 的 Cookies、Local Storage 全部 deny
+check() 模型缓存           → huggingface / ollama / CrowdStrike 全部 deny
+安全链                    → 错误确认语被拒、空勾选被拒、预览不删
+```
+
+**环境限制说明**（不是代码问题）：本机 DSH 沙箱禁止写 `~/.local/state/`，因此 `--selftest` 与 `tools/snap.js` 在沙箱内跑不起来（引擎写 `port` 文件即 `PermissionError`；Chrome CDP 起不来）。用可写 HOME 起同一份 `server.py` 验证接口全通。`native/build_native.sh` 也因本机 SDK(6.4.0.31.4) 与编译器(6.4.0.30.4) 版本不匹配而失败——需 `xcode-select --install` 更新或换匹配的 toolchain。
+
+### 10.5 仍然待办
+
+- **`--selftest` 需在正常终端复跑**（沙箱内跑不了），确认 10/10。
+- **重新截图**：UI 未改视觉，但回执文案变了，建议在正常环境重拍 `desktop.png` / `mobile.png`。
+- mole 的 `optimize` 19 个任务里只有 2 个值得移植（`qlmanage` 刷新图标/QuickLook、`dscacheutil` 刷 DNS 并带 VPN 守卫），本次**未做**——它属于「系统维护」而非「清理」，需要新的界面区块，建议单独一轮。
+- mole 明确**不建议**移植的：LaunchServices 重建（macOS 15+ 对已消失 App 一律 -10814，且会让运行中的 VPN 扩展被读成重装）、`~/.m2`/`~/.nuget`/`~/.cargo/registry/src`/`~/.ollama/models` 的删除。

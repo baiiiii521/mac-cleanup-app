@@ -105,16 +105,40 @@ mac-cleanup-app/
 │   ├── Info.plist              应用元信息（名称/标识/图标）
 │   ├── launch                  .app 的入口：挑 python → 起服务 → 开浏览器（已运行则只开浏览器）
 │   ├── server.py               唯一自研代码：HTTP 外壳 + 状态管理（不实现任何清理规则）
+│   ├── skill-scripts/          ★ 清理引擎（唯一真理源，已纳入 git）
 │   ├── index.html              界面（深色、单页、零外部资源）
 │   └── AppIcon.png             图标源图（由 tools/make_icon.py 生成）
+├── native/                     原生 App（Swift + WKWebView）+ 构建脚本
 ├── tools/make_icon.py          纯标准库生成图标（黄昏渐变 + 圆角）
+├── docs/mole-notes/            借鉴 mole 的规则调研笔记
 ├── build.sh                    组装并安装到 ~/Applications（含图标、ad-hoc 签名）
 └── README.md
 ```
 
-**清理规则全部来自技能**（`~/.hermes/skills/devops/macos-deep-optimize/scripts/`）：
-`scan.py`（只读扫描）· `report.py`（三色分级 + HTML 报告）· `clean.py`（安全清理执行器）· `judge.py`（可选 Jev 判断）。
-运行时会**优先使用实时技能目录**，所以改技能立刻生效；app 内的 `skill-scripts/` 只是技能目录不存在时的兜底副本。
+**清理规则全部来自引擎脚本**：`scan.py`（只读扫描）· `report.py`（三色分级 + HTML 报告）·
+`clean.py`（安全清理执行器）· `judge.py`（可选 Jev 判断）。
+**权威副本在本仓库 `app/skill-scripts/`**（已纳入 git）；运行时优先读技能目录
+`~/.hermes/skills/devops/macos-deep-optimize/scripts/`，构建时会把 `app/skill-scripts/*.py`
+拷进 `.app` 作兜底。改了规则记得同步：
+
+```bash
+cp app/skill-scripts/{scan,report,clean,judge}.py \
+   ~/.hermes/skills/devops/macos-deep-optimize/scripts/
+```
+
+### 清理引擎现在怎么判断「该不该删」
+
+三层，从保守到激进：
+
+1. **硬保护**（`clean.py` 的 `check()`）—— 系统目录、HOME 一级目录、登录凭据
+   （`~/.ssh`/Keychains/Mail/Safari…）、备份与安全软件（Time Machine/Backblaze/EDR…）、
+   虚拟机与容器数据、AI 模型缓存（HuggingFace/ollama…）**一律拒绝**，即使规则表判成绿灯。
+2. **三色分级**（`report.py` 的 `build_model()`）—— 唯一真理源。绿灯=纯缓存/可重建；
+   黄灯=含用户数据或判断不了；红灯=别动。iCloud 里的安装包**永远是黄灯**。
+3. **可重建性闸门**（`scan.py` 的 `artifact_safety()`）—— 构建产物要同时满足：
+   向上找到的项目根有锁文件（26 种）、不是今天还在动、git 无未提交改动，才判「可安全重建」。
+
+日志与崩溃报告**按天保留**（默认 7 天），只删更旧的 —— 它们是排障证据，不是垃圾。
 
 ## 重建 / 更新
 
@@ -147,18 +171,40 @@ bash build.sh
 | 清空废纸篓失败 | 系统会弹 Finder 授权窗（自动化权限），同意后再点一次 |
 | 清理后空间没变 | 正常——内容进了废纸篓，点「清空废纸篓」才真正释放 |
 | 想关掉服务 | 界面右下角「关闭服务」，或到 Dock 上退出该应用 |
+| 回执显示「0 项 / 磁盘没有变化」 | 说明扫描之后那些目录已被别的东西清掉了（或路径失效）。引擎会**如实说没动**，不会虚报 —— 重新体检一次即可 |
+| `--selftest` 报「引擎没起来」 | 看 `~/.local/state/mac-cleanup-app/engine.log`。常见原因：当前环境禁止写 `~/.local/state/`（例如在受限沙箱里跑），或 python3 缺失 |
+| 构建报 `SDK is not supported by the compiler` | 本机 CommandLineTools 与 SDK 版本不匹配 → `xcode-select --install` 更新，或换匹配的 toolchain |
 
-## 首次实测（2026-10-17，本机）
+## 实测数据
 
-- 磁盘：228.3 GB 总 / 147.7 GB 已用 / 46-48 GB 可用（占用 65%）
+**2026-10-18 复测（P7 之后，本机）**
+
+- 磁盘：228.3 GB 总 / 152.3 GB 已用 / 47.2 GB 可用（占用 67%）
+- 🟢 可自动清理 **9 项 4.65 GB** · 🟡 需你判断 **42 项 29.3 GB** · 🔴 1 项
+- 扫描耗时 **53.2s**（P7 之前 86.7s，优化 −39%）
+- 已卸载残留成套识别 4 组 · 可重建构建产物 12 项 · 残留安装包 2 个
+
+**2026-10-17 首次实测**
+
 - 🟢 可自动清理 **5.0 GB**（微信缓存 1.9 GB、uv 缓存 858 MB、Hotwave-Finance/node_modules 637 MB、
   opencode 更新包 635 MB + 485 MB、Chrome 缓存 371 MB、playwright 206 MB、日志）
 - 🟡 需你判断 **22.4 GB**（Claude 10.6 GB、Zalo 6.1 GB、LarkShell 2.8 GB、微信开发者工具 747 MB…）
 - 🔴 不建议手删：Spotlight 索引（`~/Library/Metadata`）
 
-## 已知修复（本次封装时发现）
+## 已知修复（历次发现）
 
-技能里 `report.py` / `clean.py` **对同一路径可能重复计数**（项目构建产物 `node_modules` 同时来自
-children 与 project_artifacts），表现为预览里同一项出现两次、执行时第二次必然失败。
-已在两处加去重（`report.build_model` 查 `seen`、`clean.collect` 按 realpath 去重），预览项数 9 → 8。
-原文件备份在技能目录：`*.bak-20261017T225130`。
+**2026-10-18（P7）**
+- **回执超额报告**：全部被跳过时 `clean.py` 仍 `exit 0`，界面就把「请求项数」当成「完成项数」。
+  现在引擎输出 `__RECEIPT__` 机器可读回执，`done` 只算真正处理掉的项；全跳过退出码 2，界面如实说「磁盘没有变化」。
+- **预览被误读成已删除**：预览现在也返回回执，`done` 恒为 0、`would_do` 表示「若执行会动几项」。
+- **一条会真实损坏的规则**：`YELLOW_SAFE_SUFFIXES` 原先把 `Service Worker/ScriptCache` 当可删，
+  会破坏 MV3 扩展的 service worker（mole 源码明确禁删）。已移除。
+- **孤儿检测子串误伤**：进程名 `node` 会压掉 `com.foo.nodebar` 这类无关目录；改为整词 + 前缀变体匹配。
+- **monorepo 产物误判**：子目录产物（`项目/web/node_modules`）找不到上层的锁文件而被判「不可重建」；
+  改为向上查找项目根。
+
+**2026-10-17（封装时）**
+- 技能里 `report.py` / `clean.py` **对同一路径可能重复计数**（项目构建产物 `node_modules` 同时来自
+  children 与 project_artifacts），表现为预览里同一项出现两次、执行时第二次必然失败。
+  已在两处加去重（`report.build_model` 查 `seen`、`clean.collect` 按 realpath 去重），预览项数 9 → 8。
+  原文件备份在技能目录：`*.bak-20261017T225130`。

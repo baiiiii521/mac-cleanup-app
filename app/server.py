@@ -438,9 +438,52 @@ class Handler(BaseHTTPRequestHandler):
                 ST.phase = "scanning_done"
                 ST.started_at = 0.0
             after = disk_stats().get("free_gb")
-            return self._json({"ok": rc == 0, "mode": mode, "output": out,
-                               "selected": len(paths) if isinstance(paths, list) else None,
-                               "free_before_gb": before, "free_after_gb": after})
+            # clean.py 在输出末尾打一行 __RECEIPT__ <json>：真实完成/失败/跳过项数。
+            # 有它就以此为准；没有（旧脚本）才退回按退出码判断。
+            receipt = None
+            for line in reversed(out.splitlines()):
+                if line.startswith("__RECEIPT__"):
+                    try:
+                        receipt = json.loads(line[len("__RECEIPT__"):].strip())
+                    except json.JSONDecodeError:
+                        receipt = None
+                    break
+            if receipt is not None:
+                if mode == "preview":
+                    # 预览：什么都没删。done 恒为 0，would_do 才是「如果执行会动几项」。
+                    ok = bool(receipt.get("ok"))
+                    done = 0
+                    done_paths = []
+                    failed_items = []
+                    skipped_items = receipt.get("skipped_items") or []
+                    err = "" if ok else "没有可预览的项（全部被跳过）"
+                else:
+                    done = int(receipt.get("done") or 0)
+                    ok = bool(receipt.get("ok")) and done > 0
+                    done_paths = receipt.get("done_paths") or []
+                    failed_items = receipt.get("failed_items") or []
+                    skipped_items = receipt.get("skipped_items") or []
+                    err = "" if ok else ("没有任何一项被真正处理" if done == 0 else "部分项处理失败")
+            else:
+                ok = rc == 0
+                done = len(paths) if (ok and isinstance(paths, list) and mode != "preview") else 0
+                done_paths = list(paths) if (ok and isinstance(paths, list) and mode != "preview") else []
+                failed_items, skipped_items = [], []
+                err = "" if ok else "清理未完成"
+            return self._json({
+                "ok": ok, "mode": mode, "output": out,
+                "selected": len(paths) if isinstance(paths, list) else None,
+                "done": done,
+                "would_do": (receipt or {}).get("would_do", 0),
+                "failed": len(failed_items),
+                "skipped": len(skipped_items),
+                "done_paths": done_paths,
+                "failed_items": failed_items,
+                "skipped_items": skipped_items,
+                "freed_kb": (receipt or {}).get("freed_kb", 0),
+                "free_before_gb": before, "free_after_gb": after,
+                "error": err,
+            })
 
         if path == "/api/judge":
             if not os.path.exists(SCAN_JSON):
