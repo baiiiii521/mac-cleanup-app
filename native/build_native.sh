@@ -21,10 +21,38 @@ BUILD_DIR="$SRC/native/.build"
 
 echo "▸ 编译 Swift 原生界面"
 rm -rf "$BUILD_DIR"; mkdir -p "$BUILD_DIR"
-SDK="$(xcrun --show-sdk-path 2>/dev/null || echo /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk)"
-swiftc -O -sdk "$SDK" -target arm64-apple-macosx13.0 \
-  -o "$BUILD_DIR/MacCleanup" "$SRC/native/main.swift" -framework Cocoa 2>&1 | tail -25
-[ -x "$BUILD_DIR/MacCleanup" ] || { echo "❌ 编译失败"; exit 1; }
+# ── SDK 选择 ──
+# 默认 SDK（xcrun --show-sdk-path）可能与本机 swiftc 版本不匹配，报
+#   error: could not build Objective-C module 'SwiftShims'
+#   error: failed to build module 'Swift'; this SDK is not supported by the compiler
+# 这是 CommandLineTools 的常见状态（SDK 比编译器新一个小版本）。
+# 策略：先试默认 SDK；失败就按「从新到旧」试同目录下其它已安装 SDK。
+SDK_DIR="/Library/Developer/CommandLineTools/SDKs"
+DEFAULT_SDK="$(xcrun --show-sdk-path 2>/dev/null || echo "$SDK_DIR/MacOSX.sdk")"
+
+build_with() {
+  local sdk="$1"
+  rm -f "$BUILD_DIR/MacCleanup"
+  swiftc -O -sdk "$sdk" -target arm64-apple-macosx13.0 \
+    -o "$BUILD_DIR/MacCleanup" "$SRC/native/main.swift" -framework Cocoa 2>&1 | tail -25
+  [ -x "$BUILD_DIR/MacCleanup" ]
+}
+
+echo "  · 默认 SDK: $DEFAULT_SDK"
+if ! build_with "$DEFAULT_SDK"; then
+  echo "  ⚠️ 默认 SDK 与编译器不匹配，尝试其它已安装 SDK…"
+  # 按版本号从新到旧排（MacOSX27.0 > MacOSX26.5 > …），跳过软链
+  for cand in $(ls -d "$SDK_DIR"/MacOSX*.sdk 2>/dev/null | grep -v 'MacOSX\.sdk$' | sort -Vr); do
+    [ "$cand" = "$DEFAULT_SDK" ] && continue
+    echo "  · 尝试 $cand"
+    if build_with "$cand"; then
+      echo "  ✓ 使用 SDK: $cand"
+      echo "  💡 想让它成为默认，可设环境变量：export SDK=$cand"
+      break
+    fi
+  done
+fi
+[ -x "$BUILD_DIR/MacCleanup" ] || { echo "❌ 编译失败：所有已安装 SDK 都不匹配，请 xcode-select --install 更新 CommandLineTools"; exit 1; }
 echo "  ✓ 编译完成（$(du -h "$BUILD_DIR/MacCleanup" | cut -f1)）"
 
 echo "▸ 组装 $DEST"

@@ -312,7 +312,28 @@ check() 模型缓存           → huggingface / ollama / CrowdStrike 全部 den
 安全链                    → 错误确认语被拒、空勾选被拒、预览不删
 ```
 
-**环境限制说明**（不是代码问题）：本机 DSH 沙箱禁止写 `~/.local/state/`，因此 `--selftest` 与 `tools/snap.js` 在沙箱内跑不起来（引擎写 `port` 文件即 `PermissionError`；Chrome CDP 起不来）。用可写 HOME 起同一份 `server.py` 验证接口全通。`native/build_native.sh` 也因本机 SDK(6.4.0.31.4) 与编译器(6.4.0.30.4) 版本不匹配而失败——需 `xcode-select --install` 更新或换匹配的 toolchain。
+**环境限制说明**：早期在受限沙箱里 `--selftest` 与 `tools/snap.js` 跑不起来（引擎写 `~/.local/state/` 的 `port` 文件即 `PermissionError`；Chrome CDP 起不来）。
+**已在放开权限后实测通过**（2026-10-18 15:1x）：
+
+```bash
+# 自检：10/10 全过
+"$HOME/Applications/Mac 清理助手.app/Contents/MacOS/MacCleanup" --selftest
+# → 引擎响应 / 清单 53 项(可勾 8) / 磁盘 / AI 判断 / 勾 2 项只处理 2 项 /
+#   确认语打错被拒 / 空勾选被拒 / 保护名单 / 操作历史 —— 通过 10 项，失败 0 项
+
+# 构建：SDK 26.5 可编译（27.0 与编译器 6.4.0.30.4 不匹配）
+bash native/build_native.sh
+# → 编译完成 276K / 内置引擎副本 / 图标 / ad-hoc 签名 / lsregister 重新注册 / 安装完成
+
+# 截图：已重拍，全部 ≤8192px
+node tools/snap.js all
+# → desktop 2736×6756 · mobile 468×6780 · mobile-operated 429×7032 · drum 452/904
+```
+
+`native/build_native.sh` 已加入 **SDK 自动回退**：先试 `xcrun --show-sdk-path`，失败则按版本从新到旧
+遍历 `/Library/Developer/CommandLineTools/SDKs/MacOSX*.sdk`，找到能编译的就用，并提示可用环境变量固定。
+`tools/snap.js` 已加入 **DPR 自动降级**：整页截图高度 × DPR 超过 7000px 时自动降 DPR（只降不升），
+避免产出超过读图工具 8192px 上限的巨图。
 
 ### 10.5 仍然待办
 

@@ -938,7 +938,11 @@ function cardHTML(it, idx, maxKB_, leadPct){
     </span>
     <span class="path">${esc(shortP(it.path))}</span>
     ${it.note ? `<span class="note" title="${esc(it.note)}">${esc(it.note)}</span>` : ""}
-    ${it.selectable ? `<span class="card-actions"><button type="button" class="act" data-clean="${p}" title="只清这一项（移到废纸篓，可逆）">${broom}清理</button></span>` : ""}
+    ${isErr
+      /* 服务端明确拒绝/跳过时，藏掉「清理」按钮：这一项已经处理过了，
+         再点只会得到同样的结果。想重试就先点别处清掉回执（或按 Esc）。 */
+      ? `<span class="card-actions"><button type="button" class="act" data-retry="${p}" title="这一项刚才没有处理成功，点这里清掉提示后可重试">${broom}重试</button></span>`
+      : (it.selectable ? `<span class="card-actions"><button type="button" class="act" data-clean="${p}" title="只清这一项（移到废纸篓，可逆）">${broom}清理</button></span>` : "")}
     <div class="rowconfirm" hidden>
       <p>把 <b>${nm}</b>（${esc(it.size)}）移到废纸篓？<b>可逆</b>，之后能从废纸篓找回。</p>
       <div class="act-row">
@@ -1014,6 +1018,21 @@ function wireRows(){
       const rc = card.querySelector(".rowconfirm");
       rc.hidden = !rc.hidden;
       if (!rc.hidden) rc.querySelector("[data-yes]").focus();
+    });
+  });
+  // 失败回执上的「重试」：先清掉这一项的错误提示，再重新走正常的清理流程
+  wrap.querySelectorAll("button.act[data-retry]").forEach(b => {
+    b.addEventListener("click", e => {
+      e.preventDefault(); e.stopPropagation();
+      const p = b.dataset.retry;
+      RECEIPTS.delete(p);
+      const card = b.closest(".card");
+      if (card) {
+        card.classList.remove("err-receipt");
+        const rc = card.querySelector(".card-receipt");
+        if (rc) rc.remove();
+      }
+      rerender();
     });
   });
   wrap.querySelectorAll(".rowconfirm").forEach(rc => {

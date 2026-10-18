@@ -173,7 +173,7 @@ bash build.sh
 | 想关掉服务 | 界面右下角「关闭服务」，或到 Dock 上退出该应用 |
 | 回执显示「0 项 / 磁盘没有变化」 | 说明扫描之后那些目录已被别的东西清掉了（或路径失效）。引擎会**如实说没动**，不会虚报 —— 重新体检一次即可 |
 | `--selftest` 报「引擎没起来」 | 看 `~/.local/state/mac-cleanup-app/engine.log`。常见原因：当前环境禁止写 `~/.local/state/`（例如在受限沙箱里跑），或 python3 缺失 |
-| 构建报 `SDK is not supported by the compiler` | 本机 CommandLineTools 与 SDK 版本不匹配 → `xcode-select --install` 更新，或换匹配的 toolchain |
+| 构建报 `SDK is not supported by the compiler` | CommandLineTools 的 SDK 比编译器新一个小版本。`build_native.sh` 现在会**自动回退**到其它已安装 SDK（按版本从新到旧试），通常无需手动处理；全部失败才需要 `xcode-select --install` 更新 |
 
 ## 实测数据
 

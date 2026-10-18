@@ -39,11 +39,24 @@ async function captureViewport(client, { width, height, dpr, mobile, outName, fo
   const metrics = await client.send('Page.getLayoutMetrics');
   const contentHeight = Math.ceil(metrics.contentSize.height);
 
+  // 超高页面要降 DPR，否则整页截图会变成「宽度×DPR 大、高度×DPR 更大」的
+  // 巨图（实测 390 宽整页在 DPR=2 下是 780×11300），既超出读图工具 8192px
+  // 上限，也浪费体积。规则：保证最终高度 ≤ MAX_H，不够就等比降 DPR（最低 1）。
+  const MAX_H = 7000;
+  let useDpr = dpr;
+  if (contentHeight * dpr > MAX_H) {
+    // 只降不升：算出来的值夹在 [1, dpr] 之间
+    useDpr = Math.min(dpr, Math.max(1, Math.floor((MAX_H / contentHeight) * 10) / 10));
+    if (useDpr < dpr) {
+      console.log(`   ⚠️ 整页高 ${contentHeight}px，DPR ${dpr} → ${useDpr}（避免超过 ${MAX_H}px 上限）`);
+    }
+  }
+
   // 设置视口为整页高度以拍摄整页
   await client.send('Emulation.setDeviceMetricsOverride', {
     width,
     height: contentHeight,
-    deviceScaleFactor: dpr,
+    deviceScaleFactor: useDpr,
     mobile: Boolean(mobile)
   });
   await sleep(500);
