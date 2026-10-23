@@ -133,7 +133,7 @@ mac-cleanup-app/
 ├── native/                    Swift + WKWebView 原生外壳
 ├── tools/                     图标、截图、交互验证脚本
 ├── docs/mole-notes/           清理规则调研笔记
-├── promo/                     宣传片素材与渲染脚本
+├── .impeccable/               设计评审截图与决策记录
 └── build.sh                   网页版外壳打包
 ```
 

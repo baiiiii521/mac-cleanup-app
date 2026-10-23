@@ -133,7 +133,7 @@ mac-cleanup-app/
 ├── native/                   Swift + WKWebView native shell
 ├── tools/                    icon, screenshot and interaction scripts
 ├── docs/mole-notes/          research notes on cleanup rules
-├── promo/                    promo footage and render scripts
+├── .impeccable/              design review screenshots and decisions
 └── build.sh                  web-shell packaging
 ```
 
