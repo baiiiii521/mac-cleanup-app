@@ -1,210 +1,175 @@
-# Mac 清理助手（mac-cleanup-app）
+<div align="center">
 
-把 `macos-deep-optimize` 技能（只读扫描 + 三色分级 + 安全清理）封装成**双击就能用的 macOS 应用**：
-不用开终端、不用记命令，打开就是界面。
+# Mac 清理助手
 
-> 已安装：**~/Applications/Mac 清理助手.app**
-> 打开方式：Finder → 应用程序 →「Mac 清理助手」；或启动台搜索；或 `open ~/Applications/Mac\ 清理助手.app`
->
-> 窗口里就是这个界面（同一份 HTML 由 App 的 WKWebView 承载，手机/浏览器打开也是它）。
-> 菜单里的「重新载入界面 / 在浏览器中打开界面」都指向同一个引擎。
+**先看清楚，再动手。** 只读体检、三色分级、逐项勾选、移入废纸篓可恢复的 macOS 磁盘清理工具。
 
-## 形态
+[![macOS 13+](https://img.shields.io/badge/macOS-13%2B-000000?style=flat-square&logo=apple&logoColor=white)](#安装) [![Swift + Python](https://img.shields.io/badge/Swift%20%2B%20Python-3.9%2B-F05138?style=flat-square&logo=swift&logoColor=white)](#技术构成) [![Local only](https://img.shields.io/badge/network-127.0.0.1%20only-6FF7C8?style=flat-square)](#隐私) [![No dependencies](https://img.shields.io/badge/front--end-zero%20dependencies-3FA66A?style=flat-square)](#技术构成)
 
-| | 现在（默认） | 备用 |
-|---|---|---|
-| 窗口 | 原生 App 窗口 + 内嵌 WKWebView 显示本界面 | `--classic` 参数启动可回退到 AppKit 原生控件版界面 |
-| 网页外壳 | `bash build.sh` 装成「Mac 清理助手（网页版）.app」，界面在浏览器里，手机也能看 | |
+**简体中文** · [English](README.en.md)
 
-三者共用**同一个引擎**（`Resources/server.py` + 技能脚本）：清理规则、安全锁、AI 判断行为完全一致。
+<img src="docs/assets/hero.jpg" alt="Mac 清理助手主界面：磁盘档案鼓、三色清单与清理操作" width="100%">
 
-## 界面：档案鼓 · 除尘与退役（v3）
+<sub>主界面 · 左侧档案鼓显示磁盘占用与清单体量，右侧按可安全清理 / 需你判断 / 系统管控分组</sub>
 
-界面的视觉世界定稿为「档案馆 · 除尘与退役」，只借四样东西：字体分级、调色、密度、一个签名动作；
-布局、导航、控件仍是标准件（Operate 表面：先是个干活的工具，再谈好看）。
+</div>
 
-- **档案鼓（3D 软件渲染仪表）**：外圈圆盘液面＝磁盘占用率，鼓身立着的每一张卡＝清单里的一项，
-  卡的高度是它的体量（对数刻度）；勾选时对应卡片发光抽出；支持拖拽转动。DPR 封顶至 2，
-  在 1x / 2x Retina 屏上均保持细腻无锯齿；配备完整的读屏等价文本（`role="img"` + 动态 `aria-label`）。
-- **三格抽屉**：可安全清理 / 需你判断 / 系统管控，每张卡＝编号 + 名称 + 体量刻度（刻度线＝100 MB）+
-  大小 + 路径 + 说明；勾选卡片抽出；长清单可展开。
-- **签名动作与可信回执**：执行清理时卡片散成尘埃旋入鼓身，可用空间随之跳格。只有服务端返回 `ok:true`
-  时才盖「已退役」章并附带移入废纸篓项数、前后空间变化与提示；若服务端拒绝则显式给出失败原因，绝不误盖退役章。
-- **窄屏适配**：≤560px 下触控热区均 ≥44px，长路径安全换行不溢出。
-- 设计标准：Impeccable craft floor，机械检查 0 违规：
-  `~/.hermes/skills/impeccable/scripts/impeccable detect --json app/index.html`
+---
 
-## 自检（不点按钮也能验一遍）
+## 为什么做这个
+
+macOS 磁盘快满时，大多数清理工具要求你相信一个黑盒：点一下「优化」，然后接受一个说不清来源的释放数字。
+
+Mac 清理助手反过来做：**先把每个字节的来源摊开，再让你决定动不动。**
+
+- **只读体检**：扫描阶段不改任何文件，先出一份完整报告。
+- **三色分级**：绿色是纯缓存 / 可重建，黄色含用户数据或判断不了，红色不建议动。
+- **选择只收窄**：勾选只能从白名单里减，永远不会越过安全边界扩大范围。
+- **默认可逆**：清理是移到废纸篓，不是 `rm -rf`；想真正释放空间，再单独清空废纸篓。
+- **字面诚实**：服务端返回 `ok:true` 才盖「已退役」章；全部跳过就说「磁盘没有变化」，不虚报。
+
+## 功能
+
+| 能力 | 说明 |
+|---|---|
+| **只读体检** | 扫描缓存、日志、构建产物、卸载残留、安装包与大文件，通常 1–3 分钟 |
+| **档案鼓** | 外圈液面 = 磁盘占用率，鼓身每张卡 = 清单一项，卡高 = 体量（对数刻度）；可拖拽转动，勾选时卡片抽出 |
+| **三格抽屉** | 可安全清理 / 需你判断 / 系统管控；每张卡给出编号、体量刻度、大小、路径与处置说明 |
+| **逐项勾选** | 单卡勾选或快捷选择：全选、全不选、≥100 MB、只选缓存类、反选 |
+| **完整报告** | 生成一份静态 HTML：磁盘总览、内存 / 负载诊断、三色清单、后台服务、大文件清单 |
+| **可信回执** | 执行后只报告真正处理掉的项数与空间变化；失败会给出原因，不会误盖成功章 |
+| **AI 判断（可选）** | 规则表认不出的目录，调用 TypeSafe Jev 给出类别、可删概率、可恢复性与置信度 |
+| **保护名单与历史** | 加入保护名单的路径永不清理；每次操作都有日志 |
+| **三种外壳** | 原生 App 窗口（WKWebView）、网页版 `.app`、`--classic` AppKit 原生控件版 |
+
+<a href="docs/assets/drum.jpg"><img src="docs/assets/drum.jpg" alt="档案鼓细节" width="420" align="right"></a>
+
+### 界面：档案馆 · 除尘与退役
+
+界面的视觉世界借自档案馆：字体分级、克制的调色、紧凑的密度，以及一个签名动作——清理时卡片散成尘埃旋入鼓身，可用空间随之跳格。
+
+动效只用来指示状态与因果，不遮挡内容。窄屏下触控热区不小于 44px，长路径安全换行；`prefers-reduced-motion` 时停掉粒子与入场动画，但保留状态反馈。
+
+## 安全模型
+
+三层来自清理引擎，两层来自应用：
+
+1. **白名单**：只处理报告判为可清理的路径，其余一律拒绝。
+2. **硬保护**：系统目录、HOME 本身与一级目录、登录凭据（`~/.ssh`、Keychains、Mail、Safari）、备份与安全软件、虚拟机 / 容器数据、AI 模型缓存，即使规则表判成绿灯也拒绝。
+3. **用户保护**：`~/.config/macos-deep-optimize/whitelist` 中的路径跳过。
+4. **默认预览**：不勾选、不预览，就不会执行。
+5. **确认文本**：执行清理必须输入「确认清理」，后端同样校验；绕过界面直接调接口也会被拒。
+
+此外还有一道**可重建性闸门**：构建产物要同时满足「向上找到项目根且有锁文件（26 种）」「不是今天还在改」「git 无未提交改动」，才会被判为可安全重建。
+
+日志与崩溃报告按天保留（默认 7 天），只删更旧的——它们是排障证据，不是垃圾。
+
+## 技术构成
+
+```text
+WKWebView / 浏览器
+        │  HTTP（仅 127.0.0.1）
+        ▼
+app/server.py            本地 HTTP 外壳 · 状态管理 · 不实现清理规则
+        │
+        ├─ scan.py          只读扫描 · 体量与可重建性判断
+        ├─ report.py        三色分级 · 静态 HTML 报告
+        ├─ clean.py         白名单 · 硬保护 · 移入废纸篓
+        └─ judge.py         可选：TypeSafe Jev 判断
+```
+
+- 界面是**单文件 HTML**，零第三方 JS/CSS 依赖，完全离线可用。
+- 原生外壳是 Swift + WKWebView；清理引擎是 Python 脚本，来自 `macos-deep-optimize` 技能，本仓库 `app/skill-scripts/` 是权威副本。
+- 唯一的外发请求是用户主动点击的「运行 AI 判断」：发送目录路径、大小、最后修改时间与子目录名，不发送文件内容。
+
+## 安装
+
+要求：macOS 13+、Xcode Command Line Tools（提供 `swiftc` 与 `python3`）。
+
+```bash
+git clone https://github.com/baiiiii521/mac-cleanup-app.git
+cd mac-cleanup-app
+
+# 原生 App → ~/Applications/Mac 清理助手.app
+bash native/build_native.sh
+
+# 或者：网页版外壳（界面在浏览器里）
+bash build.sh
+```
+
+构建脚本会做 ad-hoc 签名。首次打开若被 Gatekeeper 拦截，右键点图标 →「打开」，或执行：
+
+```bash
+xattr -dr com.apple.quarantine ~/Applications/Mac\ 清理助手.app
+```
+
+## 使用
+
+1. **开始体检**（只读扫描）——顶部实时显示磁盘可用空间。
+2. **看报告**——三色清单、后台服务与大文件；也可以在新标签页打开完整 HTML。
+3. **逐项勾选**——绿色默认全选，黄色只允许纯缓存子目录，红色与 AI 未判断项不可自动清理。
+4. **先预览，再执行**——预览只列勾选项；执行后给出移入废纸篓的项数与空间变化。想真正释放空间，再点「清空废纸篓」（需输入确认语）。
+
+### 自检
+
+不点按钮也能验证整条链路：
 
 ```bash
 "$HOME/Applications/Mac 清理助手.app/Contents/MacOS/MacCleanup" --selftest
 ```
 
-走的是界面里按钮**同一条代码路径**（同一个 `api()` 调用、同样的请求体），打印：引擎是否起来、
-清单条数、磁盘信息、AI 判断是否并入、勾选 2 项是否只处理 2 项、确认文本不对是否被拒、空勾选是否被拒……
-实测 10 项全过。
+走的是界面按钮同一条代码路径：引擎是否就绪、清单条数、AI 结果是否并入、勾选 2 项是否只处理 2 项、确认文本错误是否被拒、空勾选是否被拒等 10 项检查。
 
-## 打不开？看这里
+## 项目结构
 
-**原生版**：点了图标没看到窗口？先看是不是被别的窗口盖住了——现在已经用 `orderFrontRegardless`
-强制抬到最前，再点一次 Dock 图标也会把窗口带到前面（`applicationShouldHandleReopen`）。
-实在想看细节，终端里跑一次自检：`".../MacCleanup" --selftest`。
-
-**网页版**：双击图标没反应时，**先看日志**：`~/.local/state/mac-cleanup-app/launch.log`（每次启动都留痕）。
-
-- 现象：点了图标什么都没有
-  原因：这个应用没有窗口，界面在浏览器里。启动器曾把服务挂在前台运行，macOS 于是认为
-  「App 已在运行」，之后再点图标只去激活那个没有窗口的进程。现在改成服务丢后台、启动器立刻退出，
-  每次点击都会重新打开界面（实测连点两次都能打开）。
-- 现象：想手动兜底
-  终端里直接开：`open "http://127.0.0.1:$(cat ~/.local/state/mac-cleanup-app/port)/"`，
-  端口号就在 `~/.local/state/mac-cleanup-app/port`。
-- 现象：服务卡住 / 想彻底停掉
-  界面上点「关闭服务」，或者终端 `pkill -f "Mac 清理助手.app/Contents/Resources/server.py"`。
-  再点图标会自动重新起来。
-- 现象：macOS 提示「无法验证开发者」
-  本机自建的应用是 ad-hoc 签名。若被拦，右键点图标 →「打开」→ 确认一次即可；或终端执行
-  `xattr -dr com.apple.quarantine ~/Applications/Mac\ 清理助手.app`。
-
-## 界面流程（四步，都是点按钮）
-
-1. **体检**（只读扫描，通常 1-3 分钟）→ 顶部实时显示磁盘可用空间
-2. **打开完整报告** → 新标签页打开 HTML 报告：磁盘总览（三色分段进度条）、内存/负载诊断、🟢🟡🔴 三色清单、后台服务、大文件清单
-3. **逐项勾选** → 结果分三组列出：🟢 可安全清理（默认全选）、🟡 需你判断（只有纯缓存子目录可勾）、
-   🤔 规则表认不出（显示 AI 判断，仅供看，不可自动清理）。快捷按钮：全选 / 全不选 / 只选 ≥100MB / 只选缓存类 / 反选
-4. **预览选中项 → 执行** → 预览只列出勾选的那些；执行要在输入框敲「确认清理」，默认**移到废纸篓（可逆）**，
-   并显示可用空间前后对比；想真正释放空间再点**清空废纸篓**（需敲「清空废纸篓」确认）
-
-### 🤖 AI 判断（TypeSafe / Jev）
-
-规则表只认得写死的模式，遇到未知 App 的数据目录、UUID 命名容器就没办法。点「运行 AI 判断」会调用
-TypeSafe 的 Jev，对**规则表认不出的目录**返回带概率的类型化判断（类别 / 可删概率 / 可恢复性 / 置信度），
-清单里会显示 🤖 徽章、报告里会多一块「Jev 判断」。
-
-- key 读取顺序：环境变量 `TYPESAFE_API_KEY` → `~/.config/typesafe/key`（界面上可以直接填，权限 600）
-- ⚠️ 这是**外部 API**：会把目录路径、大小、最后修改时间、子目录名发到 TypeSafe 服务器
-- 判断结果是**参考**不是判决，最终仍由你拍板；每个目录问 3 个问题、5 个一批（`--top` 控制范围）
-
-工具箱里还有：**保护名单**（加入后永不清理）、**操作历史**（每次执行都记日志）、**关闭服务**。
-
-## 安全保障（三层，来自技能）
-
-1. **白名单** —— 只处理报告判为可清理的路径，其余一律拒绝
-2. **硬保护** —— 系统目录、HOME 本身、HOME 的一级目录永不删除
-3. **用户保护** —— `~/.config/macos-deep-optimize/whitelist` 里的路径跳过
-
-再加应用层两条：清理**默认预览**；**执行必须输入确认文本**（后端也校验，绕过界面直接调接口同样会被拒）。
-
-**数据不出本机**：服务只监听 `127.0.0.1`，没有任何外网上传；报告是纯静态 HTML，离线可看。
-
-## 结构
-
-```
+```text
 mac-cleanup-app/
 ├── app/
-│   ├── Info.plist              应用元信息（名称/标识/图标）
-│   ├── launch                  .app 的入口：挑 python → 起服务 → 开浏览器（已运行则只开浏览器）
-│   ├── server.py               唯一自研代码：HTTP 外壳 + 状态管理（不实现任何清理规则）
-│   ├── skill-scripts/          ★ 清理引擎（唯一真理源，已纳入 git）
-│   ├── index.html              界面（深色、单页、零外部资源）
-│   └── AppIcon.png             图标源图（由 tools/make_icon.py 生成）
-├── native/                     原生 App（Swift + WKWebView）+ 构建脚本
-├── tools/make_icon.py          纯标准库生成图标（黄昏渐变 + 圆角）
-├── docs/mole-notes/            借鉴 mole 的规则调研笔记
-├── build.sh                    组装并安装到 ~/Applications（含图标、ad-hoc 签名）
-└── README.md
+│   ├── launch                 .app 入口：挑 Python → 起服务 → 开界面
+│   ├── server.py              本地 HTTP 外壳与状态管理
+│   ├── skill-scripts/         清理引擎（权威副本，已入库）
+│   ├── index.html             界面（单文件、零外部资源）
+│   └── Info.plist             应用元信息
+├── native/                    Swift + WKWebView 原生外壳
+├── tools/                     图标、截图、交互验证脚本
+├── docs/mole-notes/           清理规则调研笔记
+├── promo/                     宣传片素材与渲染脚本
+└── build.sh                   网页版外壳打包
 ```
 
-**清理规则全部来自引擎脚本**：`scan.py`（只读扫描）· `report.py`（三色分级 + HTML 报告）·
-`clean.py`（安全清理执行器）· `judge.py`（可选 Jev 判断）。
-**权威副本在本仓库 `app/skill-scripts/`**（已纳入 git）；运行时优先读技能目录
-`~/.hermes/skills/devops/macos-deep-optimize/scripts/`，构建时会把 `app/skill-scripts/*.py`
-拷进 `.app` 作兜底。改了规则记得同步：
+运行状态与日志：
 
-```bash
-cp app/skill-scripts/{scan,report,clean,judge}.py \
-   ~/.hermes/skills/devops/macos-deep-optimize/scripts/
+```text
+~/.local/state/mac-cleanup-app/                  scan.json / report.html / port / server.log
+~/.local/state/macos-deep-optimize/operations.log 清理操作日志
 ```
 
-### 清理引擎现在怎么判断「该不该删」
+## 实测
 
-三层，从保守到激进：
+本机 2026-10-18 复测（P7 之后）：
 
-1. **硬保护**（`clean.py` 的 `check()`）—— 系统目录、HOME 一级目录、登录凭据
-   （`~/.ssh`/Keychains/Mail/Safari…）、备份与安全软件（Time Machine/Backblaze/EDR…）、
-   虚拟机与容器数据、AI 模型缓存（HuggingFace/ollama…）**一律拒绝**，即使规则表判成绿灯。
-2. **三色分级**（`report.py` 的 `build_model()`）—— 唯一真理源。绿灯=纯缓存/可重建；
-   黄灯=含用户数据或判断不了；红灯=别动。iCloud 里的安装包**永远是黄灯**。
-3. **可重建性闸门**（`scan.py` 的 `artifact_safety()`）—— 构建产物要同时满足：
-   向上找到的项目根有锁文件（26 种）、不是今天还在动、git 无未提交改动，才判「可安全重建」。
+- 磁盘 228.3 GB，已用 152.3 GB，可用 47.2 GB（占用 67%）。
+- 🟢 可自动清理 **9 项 4.65 GB**；🟡 需你判断 **42 项 29.3 GB**；🔴 1 项。
+- 扫描耗时 **53.2 s**（优化前 86.7 s，−39%）。
+- 识别出 4 组已卸载残留、12 项可重建构建产物、2 个残留安装包。
 
-日志与崩溃报告**按天保留**（默认 7 天），只删更旧的 —— 它们是排障证据，不是垃圾。
+数字来自真实扫描，不是演示数据。
 
-## 重建 / 更新
+## 已知限制
 
-```bash
-cd ~/Developer/mac-cleanup-app
-# 默认：构建原生 macOS 应用并安装到 ~/Applications（swiftc，几秒完成）
-bash native/build_native.sh
-# 备用：组装网页版外壳应用
-bash build.sh
-# 功能自检（10 项全通）
-"$HOME/Applications/Mac 清理助手.app/Contents/MacOS/MacCleanup" --selftest
-```
+- 仅支持 macOS；依赖系统自带的 `python3`（缺失时执行 `xcode-select --install`）。
+- 应用为 ad-hoc 签名，没有 Apple 公证；首次打开需要手动放行一次。
+- 清理默认进废纸篓，不会立刻释放空间；清空废纸篓不可恢复，需要单独确认。
+- AI 判断需要 TypeSafe Key（环境变量 `TYPESAFE_API_KEY` 或 `~/.config/typesafe/key`），且会外发目录元数据；不开启不影响其它功能。
+- 绿色清单偏保守，宁可少清也不误删；想清更多需要逐项判断。
+- 没有自动化测试套件；改动后用 `--selftest` 与 `node tools/verify-interaction.js` 验证。
 
-技能脚本更新后**不需要重建**（app 直接读技能目录）。只有当你想更新 app 自带的兜底副本或界面时才重建。
+## 致谢
 
-状态与日志：
+- 清理规则与安全模型来自 `macos-deep-optimize` 技能
+- `docs/mole-notes/` 参考了 [mole](https://github.com/tw93/Mole) 的规则与保护清单
+- AI 判断由 TypeSafe Jev 提供
 
-```
-~/.local/state/mac-cleanup-app/          # scan.json / report.html / port / server.log
-~/.local/state/macos-deep-optimize/operations.log   # 清理操作日志（技能写的）
-```
+## License
 
-## 排错
-
-| 现象 | 处理 |
-|---|---|
-| 双击没反应 | 看 `~/.local/state/mac-cleanup-app/server.log`；多半是找不到 python3 → `xcode-select --install` |
-| Gatekeeper 提示"无法验证开发者" | 右键 → 打开（只需一次）；build.sh 已做 ad-hoc 签名 |
-| 浏览器没自动打开 | 手动访问 `http://127.0.0.1:$(cat ~/.local/state/mac-cleanup-app/port)/` |
-| 清空废纸篓失败 | 系统会弹 Finder 授权窗（自动化权限），同意后再点一次 |
-| 清理后空间没变 | 正常——内容进了废纸篓，点「清空废纸篓」才真正释放 |
-| 想关掉服务 | 界面右下角「关闭服务」，或到 Dock 上退出该应用 |
-| 回执显示「0 项 / 磁盘没有变化」 | 说明扫描之后那些目录已被别的东西清掉了（或路径失效）。引擎会**如实说没动**，不会虚报 —— 重新体检一次即可 |
-| `--selftest` 报「引擎没起来」 | 看 `~/.local/state/mac-cleanup-app/engine.log`。常见原因：当前环境禁止写 `~/.local/state/`（例如在受限沙箱里跑），或 python3 缺失 |
-| 构建报 `SDK is not supported by the compiler` | CommandLineTools 的 SDK 比编译器新一个小版本。`build_native.sh` 现在会**自动回退**到其它已安装 SDK（按版本从新到旧试），通常无需手动处理；全部失败才需要 `xcode-select --install` 更新 |
-
-## 实测数据
-
-**2026-10-18 复测（P7 之后，本机）**
-
-- 磁盘：228.3 GB 总 / 152.3 GB 已用 / 47.2 GB 可用（占用 67%）
-- 🟢 可自动清理 **9 项 4.65 GB** · 🟡 需你判断 **42 项 29.3 GB** · 🔴 1 项
-- 扫描耗时 **53.2s**（P7 之前 86.7s，优化 −39%）
-- 已卸载残留成套识别 4 组 · 可重建构建产物 12 项 · 残留安装包 2 个
-
-**2026-10-17 首次实测**
-
-- 🟢 可自动清理 **5.0 GB**（微信缓存 1.9 GB、uv 缓存 858 MB、Hotwave-Finance/node_modules 637 MB、
-  opencode 更新包 635 MB + 485 MB、Chrome 缓存 371 MB、playwright 206 MB、日志）
-- 🟡 需你判断 **22.4 GB**（Claude 10.6 GB、Zalo 6.1 GB、LarkShell 2.8 GB、微信开发者工具 747 MB…）
-- 🔴 不建议手删：Spotlight 索引（`~/Library/Metadata`）
-
-## 已知修复（历次发现）
-
-**2026-10-18（P7）**
-- **回执超额报告**：全部被跳过时 `clean.py` 仍 `exit 0`，界面就把「请求项数」当成「完成项数」。
-  现在引擎输出 `__RECEIPT__` 机器可读回执，`done` 只算真正处理掉的项；全跳过退出码 2，界面如实说「磁盘没有变化」。
-- **预览被误读成已删除**：预览现在也返回回执，`done` 恒为 0、`would_do` 表示「若执行会动几项」。
-- **一条会真实损坏的规则**：`YELLOW_SAFE_SUFFIXES` 原先把 `Service Worker/ScriptCache` 当可删，
-  会破坏 MV3 扩展的 service worker（mole 源码明确禁删）。已移除。
-- **孤儿检测子串误伤**：进程名 `node` 会压掉 `com.foo.nodebar` 这类无关目录；改为整词 + 前缀变体匹配。
-- **monorepo 产物误判**：子目录产物（`项目/web/node_modules`）找不到上层的锁文件而被判「不可重建」；
-  改为向上查找项目根。
-
-**2026-10-17（封装时）**
-- 技能里 `report.py` / `clean.py` **对同一路径可能重复计数**（项目构建产物 `node_modules` 同时来自
-  children 与 project_artifacts），表现为预览里同一项出现两次、执行时第二次必然失败。
-  已在两处加去重（`report.build_model` 查 `seen`、`clean.collect` 按 realpath 去重），预览项数 9 → 8。
-  原文件备份在技能目录：`*.bak-20261017T225130`。
+未声明开源许可证。如需复用代码或规则，请先联系作者。
